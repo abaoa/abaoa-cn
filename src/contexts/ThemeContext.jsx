@@ -18,7 +18,9 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
-    document.body.className = theme
+    // 移除之前的主题类并添加新的主题类
+    document.body.classList.remove('light', 'dark')
+    document.body.classList.add(theme)
   }, [theme])
 
   const toggleTheme = () => {
