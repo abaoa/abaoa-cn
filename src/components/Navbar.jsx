@@ -6,9 +6,12 @@ function Navbar() {
 
   return (
     <nav 
-      className={`py-4 px-6 sticky top-0 z-50 backdrop-blur-lg transition-all duration-300 ${theme === 'light' ? 'bg-white/70' : 'bg-gray-900/70'}`}
+      className={`py-4 px-6 sticky top-0 z-50 transition-all duration-300 ${theme === 'light' ? 'bg-white/70' : 'bg-gray-900/70'}`}
       style={{
-        boxShadow: theme === 'light' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: theme === 'light' ? '0 8px 32px 0 rgba(31, 38, 135, 0.15)' : '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        borderBottom: theme === 'light' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)'
       }}
     >
       <div className="container mx-auto flex justify-between items-center">

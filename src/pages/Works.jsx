@@ -24,22 +24,40 @@ function Works() {
   ]
 
   return (
-    <div className="py-8">
+    <div 
+      className="py-8 min-h-[80vh]"
+      style={{
+        background: theme === 'light' ? 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+      }}
+    >
       <h1 className="text-3xl font-bold mb-8 text-center">我的作品</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {works.map(work => (
           <div 
             key={work.id}
-            className={`rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 backdrop-blur-lg p-6 ${theme === 'light' ? 'bg-white/70 hover:bg-white/90' : 'bg-gray-900/70 hover:bg-gray-900/90'}`}
+            className={`rounded-xl overflow-hidden transition-all duration-300 p-6 ${theme === 'light' ? 'bg-white/70 hover:bg-white/90' : 'bg-gray-900/70 hover:bg-gray-900/90'}`}
             style={{
-              boxShadow: theme === 'light' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: theme === 'light' ? '0 8px 32px 0 rgba(31, 38, 135, 0.15)' : '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+              border: theme === 'light' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+              transform: 'translateY(0)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-5px)'
+              e.currentTarget.style.boxShadow = theme === 'light' ? '0 12px 40px 0 rgba(31, 38, 135, 0.25)' : '0 12px 40px 0 rgba(0, 0, 0, 0.4)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = theme === 'light' ? '0 8px 32px 0 rgba(31, 38, 135, 0.15)' : '0 8px 32px 0 rgba(0, 0, 0, 0.3)'
             }}
           >
-            <div className="aspect-square mb-4 rounded-lg overflow-hidden">
-              <img src={work.image} alt={work.title} className="w-full h-full object-cover" />
+            <div className="aspect-square mb-4 rounded-lg overflow-hidden shadow-lg">
+              <img src={work.image} alt={work.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
             </div>
             <h2 className="text-xl font-semibold mb-2">{work.title}</h2>
-            <p className="text-gray-600 dark:text-gray-300">{work.description}</p>
+            <p className={theme === 'light' ? 'text-gray-600' : 'text-gray-300'}>{work.description}</p>
           </div>
         ))}
       </div>
