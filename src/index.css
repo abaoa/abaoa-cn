@@ -11,6 +11,8 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -34,8 +36,8 @@ body {
 
 /* 液态玻璃效果基础类 */
 .glass {
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
@@ -44,8 +46,8 @@ body {
 }
 
 .glass-light {
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 
@@ -54,8 +56,8 @@ body {
 }
 
 .glass-dark {
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   background: rgba(15, 15, 35, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 
@@ -169,8 +171,8 @@ body {
 
 /* 按钮悬停效果 */
 .glass-button {
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 
