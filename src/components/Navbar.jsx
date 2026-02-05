@@ -1,27 +1,48 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme()
+  const location = useLocation()
+
+  const isActive = (path) => location.pathname === path
 
   return (
-    <nav 
-      className={`py-4 px-6 sticky top-0 z-50 transition-all duration-300 ${theme === 'light' ? 'bg-white/70' : 'bg-gray-900/70'}`}
-      style={{
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        boxShadow: theme === 'light' ? '0 8px 32px 0 rgba(31, 38, 135, 0.15)' : '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-        borderBottom: theme === 'light' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)'
-      }}
-    >
+    <nav className={`py-4 px-6 sticky top-0 z-50 ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">abaoa.cn</Link>
-        <div className="flex space-x-8">
-          <Link to="/" className="hover:text-primary transition-colors">首页</Link>
-          <Link to="/works" className="hover:text-primary transition-colors">作品</Link>
-          <Link to="/about" className="hover:text-primary transition-colors">关于</Link>
+        <Link 
+          to="/" 
+          className={`text-2xl font-bold bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent hover:opacity-80 transition-opacity`}
+        >
+          abaoa.cn
+        </Link>
+        
+        <div className="flex items-center space-x-2 md:space-x-8">
+          <div className="hidden md:flex space-x-2">
+            {[
+              { path: '/', label: '首页', icon: '🏠' },
+              { path: '/works', label: '作品', icon: '🎨' },
+              { path: '/about', label: '关于', icon: '👤' }
+            ].map(item => (
+              <Link 
+                key={item.path}
+                to={item.path}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                  isActive(item.path)
+                    ? 'bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
+                    : 'hover:bg-white/20 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          
           <button 
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className={`p-2 rounded-full glass-button flex items-center justify-center ${
+              theme === 'light' ? 'text-primary-500' : 'text-primary-300'
+            }`}
             onClick={toggleTheme}
             aria-label="切换主题"
           >
