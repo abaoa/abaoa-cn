@@ -85,43 +85,64 @@ function WorkDetail() {
         </Link>
       </div>
 
-      {/* 作品头部 */}
-      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
-        <div className="flex flex-col md:flex-row items-start gap-6">
-          <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-white/50' : 'bg-white/10'}`}>
-            <span className="iconify text-6xl text-primary-500" data-icon={work.icon}></span>
-          </div>
-          <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold">{work.title}</h1>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                theme === 'light'
-                  ? 'bg-primary-500/20 text-primary-600 border border-primary-500/30'
-                  : 'bg-primary-500/30 text-primary-300 border border-primary-500/40'
-              }`}>
-                v{work.latestVersion}
-              </span>
+      {/* 作品封面大图 */}
+      <div className="relative h-48 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-8 group">
+        <img 
+          src={work.coverImage} 
+          alt={work.title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className={`p-3 rounded-2xl ${theme === 'light' ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-md`}>
+              <span className="iconify text-4xl sm:text-5xl text-white" data-icon={work.icon}></span>
             </div>
-            <p className={`text-lg mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
-              {work.description}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {work.tags.map(tag => (
-                <span 
-                  key={tag}
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    theme === 'light'
-                      ? 'bg-white/50 text-gray-700 border border-gray-200'
-                      : 'bg-white/10 text-gray-300 border border-white/20'
-                  }`}
-                >
-                  {tag}
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{work.title}</h1>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30">
+                  v{work.latestVersion}
                 </span>
-              ))}
+              </div>
+              <p className="text-base sm:text-lg text-white/90 drop-shadow max-w-2xl">
+                {work.description}
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 截图画廊 */}
+      {work.screenshots && work.screenshots.length > 0 && (
+        <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-6 sm:p-8 mb-8`}>
+          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="iconify text-primary-500" data-icon="simple-icons:image" style={{ fontSize: '24px' }}></span>
+            应用截图
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {work.screenshots.map((screenshot, index) => (
+              <div 
+                key={index} 
+                className="relative rounded-2xl overflow-hidden group cursor-pointer"
+                onClick={() => window.open(screenshot, '_blank')}
+              >
+                <img 
+                  src={screenshot} 
+                  alt={`${work.title} 截图 ${index + 1}`}
+                  className="w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 下载区域 */}
       <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>

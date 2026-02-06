@@ -1,13 +1,26 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
-  const isActive = (path) => location.pathname === path
+  // 监听滚动
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const isActive = (path) => {
+    if (path === '/') return location.pathname === '/'
+    return location.pathname.startsWith(path)
+  }
 
   const navItems = [
     { path: '/', label: '首页', icon: '🏠' },
@@ -16,7 +29,17 @@ function Navbar() {
   ]
 
   return (
-    <nav className={`py-4 px-6 sticky top-0 z-50 ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
+    <nav 
+      className={`py-4 px-4 sm:px-6 sticky top-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? theme === 'light' 
+            ? 'glass-light shadow-lg backdrop-blur-xl' 
+            : 'glass-dark shadow-lg shadow-black/20 backdrop-blur-xl'
+          : theme === 'light' 
+            ? 'glass-light' 
+            : 'glass-dark'
+      }`}
+    >
       <div className="container mx-auto flex justify-between items-center">
         <Link 
           to="/" 

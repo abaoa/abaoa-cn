@@ -1,0 +1,32 @@
+{
+  "name": "阿宝啊 - Qt/C++ 开发工程师",
+  "short_name": "abaoa",
+  "description": "阿宝啊@abaoa.cn - Qt/C++ 开发工程师，专注于跨平台桌面应用开发",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/abaoa.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/abaoa.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "categories": ["portfolio", "developer", "technology"],
+  "screenshots": [
+    {
+      "src": "/abaoa.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg"
+    }
+  ]
+}

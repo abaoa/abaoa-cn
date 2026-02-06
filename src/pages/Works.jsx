@@ -29,41 +29,57 @@ function Works() {
           <div 
             key={work.id}
             onClick={() => navigate(`/works/${work.id}`)}
-            className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden p-6 cursor-pointer hover:scale-105 transition-transform`}
+            className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-all duration-300 group`}
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <span className="iconify text-3xl text-primary-500" data-icon={work.icon}></span>
-              <div>
-                <h2 className="text-xl font-bold">{work.title}</h2>
-                <p className="text-sm opacity-60">v{work.latestVersion}</p>
+            {/* 封面图 */}
+            <div className="relative h-40 overflow-hidden">
+              <img 
+                src={work.coverImage} 
+                alt={work.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+              <div className="absolute bottom-3 left-4 right-4">
+                <div className="flex items-center gap-2">
+                  <span className="iconify text-2xl text-white drop-shadow-lg" data-icon={work.icon}></span>
+                  <div>
+                    <h2 className="text-lg font-bold text-white drop-shadow-lg">{work.title}</h2>
+                    <p className="text-xs text-white/80">v{work.latestVersion}</p>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <p className={`mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
-              {work.description}
-            </p>
-            
-            <div className="flex flex-wrap gap-2 mb-4">
-              {work.tags.map(tag => (
-                <span 
-                  key={tag}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    theme === 'light'
-                      ? 'bg-primary-500/20 text-primary-600 border border-primary-500/30'
-                      : 'bg-primary-500/30 text-primary-300 border border-primary-500/40'
-                  }`}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm opacity-70">
-              <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }}></span>
-              {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }}></span>}
-              {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }}></span>}
-              <span className="ml-auto">{work.fileSize}</span>
+            <div className="p-5">
+              <p className={`mb-4 text-sm line-clamp-2 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+                {work.description}
+              </p>
+              
+              <div className="flex flex-wrap gap-2 mb-4">
+                {work.tags.map(tag => (
+                  <span 
+                    key={tag}
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      theme === 'light'
+                        ? 'bg-primary-500/20 text-primary-600 border border-primary-500/30'
+                        : 'bg-primary-500/30 text-primary-300 border border-primary-500/40'
+                    }`}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="flex items-center justify-between text-sm opacity-70">
+                <div className="flex items-center gap-2">
+                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }}></span>
+                  {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }}></span>}
+                  {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }}></span>}
+                </div>
+                <span className="text-xs">{work.fileSize}</span>
+              </div>
             </div>
           </div>
         ))}

@@ -38,6 +38,7 @@ export const works = [
         }
       ]
     },
+    coverImage: 'https://via.placeholder.com/800x400/41CD52/FFFFFF?text=文件管理器Pro',
     screenshots: [
       'https://via.placeholder.com/800x600/41CD52/FFFFFF?text=文件管理器+截图1',
       'https://via.placeholder.com/800x600/41CD52/FFFFFF?text=文件管理器+截图2',
@@ -81,6 +82,7 @@ export const works = [
         }
       ]
     },
+    coverImage: 'https://via.placeholder.com/800x400/659AD3/FFFFFF?text=代码编辑器Lite',
     screenshots: [
       'https://via.placeholder.com/800x600/659AD3/FFFFFF?text=代码编辑器+截图1',
     ],
@@ -123,6 +125,7 @@ export const works = [
         }
       ]
     },
+    coverImage: 'https://via.placeholder.com/800x400/F34F29/FFFFFF?text=数据库管理工具',
     screenshots: [
       'https://via.placeholder.com/800x600/F34F29/FFFFFF?text=数据库工具+截图1',
     ],
@@ -155,6 +158,7 @@ export const works = [
       },
       history: []
     },
+    coverImage: 'https://via.placeholder.com/800x400/FFD845/FFFFFF?text=图像处理工具',
     screenshots: [
       'https://via.placeholder.com/800x600/FFD845/FFFFFF?text=图像处理+截图1',
     ],

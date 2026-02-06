@@ -11,23 +11,27 @@ export const useTheme = () => {
 }
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState('light')
+  const [isSystemTheme, setIsSystemTheme] = useState(true)
+
+  // 初始化主题
+  useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
-      return savedTheme
+      setTheme(savedTheme)
+      setIsSystemTheme(false)
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
     }
-    // 检测系统主题偏好
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-    return 'light'
-  })
+  }, [])
 
+  // 应用主题到 body
   useEffect(() => {
-    localStorage.setItem('theme', theme)
-    // 移除之前的主题类并添加新的主题类
-    document.body.classList.remove('light', 'dark')
-    document.body.classList.add(theme)
+    if (theme) {
+      document.body.classList.remove('light', 'dark')
+      document.body.classList.add(theme)
+      document.documentElement.setAttribute('data-theme', theme)
+    }
   }, [theme])
 
   // 监听系统主题变化
@@ -35,21 +39,37 @@ export const ThemeProvider = ({ children }) => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = (e) => {
       // 只有当用户没有手动设置主题时，才跟随系统
-      if (!localStorage.getItem('theme')) {
+      if (isSystemTheme) {
         setTheme(e.matches ? 'dark' : 'light')
       }
     }
     
     mediaQuery.addEventListener('change', handleChange)
     return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [])
+  }, [isSystemTheme])
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+    setTheme(prev => {
+      const newTheme = prev === 'light' ? 'dark' : 'light'
+      localStorage.setItem('theme', newTheme)
+      setIsSystemTheme(false)
+      return newTheme
+    })
+  }
+  
+  // 重置为系统主题
+  const resetToSystemTheme = () => {
+    localStorage.removeItem('theme')
+    setIsSystemTheme(true)
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
+    } else {
+      setTheme('light')
+    }
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, resetToSystemTheme, isSystemTheme }}>
       {children}
     </ThemeContext.Provider>
   )

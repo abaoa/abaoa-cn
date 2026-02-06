@@ -1,9 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Home from './pages/Home'
-import Works from './pages/Works'
-import WorkDetail from './pages/WorkDetail'
-import About from './pages/About'
+import PageLoader from './components/PageLoader'
+
+// 懒加载页面
+const Home = lazy(() => import('./pages/Home'))
+const Works = lazy(() => import('./pages/Works'))
+const WorkDetail = lazy(() => import('./pages/WorkDetail'))
+const About = lazy(() => import('./pages/About'))
 
 function App() {
   return (
@@ -17,10 +21,26 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="works" element={<Works />} />
-            <Route path="works/:id" element={<WorkDetail />} />
-            <Route path="about" element={<About />} />
+            <Route index element={
+              <Suspense fallback={<PageLoader />}>
+                <Home />
+              </Suspense>
+            } />
+            <Route path="works" element={
+              <Suspense fallback={<PageLoader />}>
+                <Works />
+              </Suspense>
+            } />
+            <Route path="works/:id" element={
+              <Suspense fallback={<PageLoader />}>
+                <WorkDetail />
+              </Suspense>
+            } />
+            <Route path="about" element={
+              <Suspense fallback={<PageLoader />}>
+                <About />
+              </Suspense>
+            } />
           </Route>
         </Routes>
       </Router>
