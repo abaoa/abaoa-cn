@@ -130,51 +130,51 @@ function WorkDetail() {
           下载
         </h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div>
             <p className="text-sm opacity-60 mb-1">最新版本</p>
-            <p className="text-xl font-semibold">{work.latestVersion}</p>
+            <p className="text-lg sm:text-xl font-semibold">{work.latestVersion}</p>
           </div>
           <div>
             <p className="text-sm opacity-60 mb-1">发布日期</p>
-            <p className="text-xl font-semibold">{work.releaseDate}</p>
+            <p className="text-lg sm:text-xl font-semibold">{work.releaseDate}</p>
           </div>
           <div>
             <p className="text-sm opacity-60 mb-1">文件大小</p>
-            <p className="text-xl font-semibold">{work.fileSize}</p>
+            <p className="text-lg sm:text-xl font-semibold">{work.fileSize}</p>
           </div>
           <div>
             <p className="text-sm opacity-60 mb-1">支持平台</p>
-            <div className="flex gap-2 mt-1">
+            <div className="flex flex-wrap gap-2 mt-1">
               {work.platforms.map(p => (
-                <span key={p} className="text-sm px-2 py-1 rounded bg-primary-500/20">{p}</span>
+                <span key={p} className="text-xs sm:text-sm px-2 py-1 rounded bg-primary-500/20 whitespace-nowrap">{p}</span>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm opacity-60 mb-6">
-          <span>MD5:</span>
-          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs">{work.md5}</code>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm opacity-60 mb-6">
+          <span className="flex-shrink-0">MD5:</span>
+          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all">{work.md5}</code>
         </div>
 
         {/* 智能下载按钮 */}
         {isCurrentPlatformSupported ? (
           <div className="space-y-4">
             <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-green-500/10' : 'bg-green-500/20'} border border-green-500/30`}>
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm mb-3">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-start gap-2 text-green-600 dark:text-green-400 text-sm mb-3">
+                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>检测到您的系统是 {getPlatformName(userPlatform)}，已为您推荐适合的版本</span>
+                <span className="break-words">检测到您的系统是 {getPlatformName(userPlatform)}，已为您推荐适合的版本</span>
               </div>
               <a 
                 href={downloads[userPlatform].url}
-                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-lg hover:opacity-90 transition-opacity"
+                className="flex items-center justify-center gap-2 sm:gap-3 w-full py-3 sm:py-4 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-base sm:text-lg hover:opacity-90 transition-opacity"
               >
-                <span className="iconify" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }}></span>
-                <span>下载 {getPlatformName(userPlatform)} 版本</span>
-                <span className="text-base font-normal opacity-80">({downloads[userPlatform].size})</span>
+                <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }}></span>
+                <span className="truncate">下载 {getPlatformName(userPlatform)} 版本</span>
+                <span className="text-sm sm:text-base font-normal opacity-80 flex-shrink-0">({downloads[userPlatform].size})</span>
               </a>
             </div>
             
@@ -185,18 +185,19 @@ function WorkDetail() {
                   {availablePlatforms
                     .filter(p => p !== userPlatform)
                     .map(platform => (
-                      <a
-                        key={platform}
-                        href={downloads[platform].url}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                          theme === 'light'
-                            ? 'bg-white/50 hover:bg-white/70 text-gray-700'
-                            : 'bg-white/10 hover:bg-white/20 text-gray-300'
-                        }`}
-                      >
-                        <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
-                        {getPlatformName(platform)}
-                      </a>
+                    <a
+                      key={platform}
+                      href={downloads[platform].url}
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
+                        theme === 'light'
+                          ? 'bg-white/50 hover:bg-white/70 text-gray-700'
+                          : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                      }`}
+                    >
+                      <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
+                      <span className="hidden sm:inline">{getPlatformName(platform)}</span>
+                      <span className="sm:hidden">{getPlatformName(platform).slice(0, 3)}</span>
+                    </a>
                     ))}
                 </div>
               </div>
@@ -209,31 +210,31 @@ function WorkDetail() {
                 <svg className="w-6 h-6 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <div>
-                  <p className="font-medium text-amber-600 dark:text-amber-400">
+                <div className="min-w-0">
+                  <p className="font-medium text-amber-600 dark:text-amber-400 break-words">
                     暂不支持 {getPlatformName(userPlatform) || '您的系统'}
                   </p>
-                  <p className="text-sm opacity-70 mt-1">
+                  <p className="text-sm opacity-70 mt-1 break-words">
                     该软件目前仅支持以下平台，请选择适合您的版本下载：
                   </p>
                 </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {availablePlatforms.map(platform => (
                 <a
                   key={platform}
                   href={downloads[platform].url}
-                  className={`flex items-center justify-center gap-3 py-4 rounded-xl font-semibold transition-colors ${
+                  className={`flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
                     theme === 'light'
                       ? 'bg-white/60 hover:bg-white/80 text-gray-800'
                       : 'bg-white/10 hover:bg-white/20 text-gray-200'
                   }`}
                 >
-                  <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
-                  <span>{getPlatformName(platform)}</span>
-                  <span className="text-sm opacity-60">({downloads[platform].size})</span>
+                  <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
+                  <span className="truncate">{getPlatformName(platform)}</span>
+                  <span className="text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
                 </a>
               ))}
             </div>
@@ -341,27 +342,26 @@ function WorkDetail() {
             {historyDownloads.map((oldVersion, index) => (
               <div 
                 key={index} 
-                className={`p-5 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}
+                className={`p-4 sm:p-5 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full text-sm font-bold bg-gray-500 text-white">v{oldVersion.version}</span>
-                    <span className="text-sm opacity-60">{oldVersion.date}</span>
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="px-3 py-1 rounded-full text-sm font-bold bg-gray-500 text-white whitespace-nowrap">v{oldVersion.version}</span>
+                  <span className="text-sm opacity-60 whitespace-nowrap">{oldVersion.date}</span>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                   {Object.entries(oldVersion.downloads).map(([platform, file]) => (
                     <a
                       key={platform}
                       href={file.url}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
                         theme === 'light'
                           ? 'bg-white/60 hover:bg-white/80 text-gray-700'
                           : 'bg-white/10 hover:bg-white/20 text-gray-300'
                       }`}
                     >
-                      <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
-                      <span>{getPlatformName(platform)}</span>
+                      <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
+                      <span className="hidden sm:inline">{getPlatformName(platform)}</span>
+                      <span className="sm:hidden">{getPlatformName(platform).slice(0, 3)}</span>
                       <span className="text-xs opacity-60">({file.size})</span>
                     </a>
                   ))}
