@@ -87,6 +87,7 @@ function About() {
           </div>
         </div>
 
+        {/* 工作经历 */}
         <div className={`mt-12 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
           <h3 className="text-2xl font-bold mb-8 text-center">
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -114,6 +115,43 @@ function About() {
                 <div className="text-lg font-semibold mb-2 opacity-70">{item.company}</div>
                 <p className="opacity-80">{item.desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 友情链接 */}
+        <div className={`mt-12 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
+          <h3 className="text-2xl font-bold mb-8 text-center">
+            <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              友情链接
+            </span>
+          </h3>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {[
+              { name: 'Qt 官方文档', url: 'https://doc.qt.io/', icon: 'simple-icons:qt' },
+              { name: 'C++ Reference', url: 'https://cppreference.com/', icon: 'simple-icons:cplusplus' },
+              { name: 'GitHub', url: 'https://github.com/', icon: 'simple-icons:github' },
+              { name: 'Stack Overflow', url: 'https://stackoverflow.com/', icon: 'simple-icons:stackoverflow' },
+              { name: 'CMake 文档', url: 'https://cmake.org/documentation/', icon: 'simple-icons:cmake' },
+              { name: 'Vcpkg', url: 'https://vcpkg.io/', icon: 'simple-icons:microsoft' },
+              { name: 'Conan', url: 'https://conan.io/', icon: 'simple-icons:conan' },
+              { name: '掘金', url: 'https://juejin.cn/', icon: 'simple-icons:juejin' },
+            ].map((link, index) => (
+              <a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 ${
+                  theme === 'light' 
+                    ? 'bg-white/40 hover:bg-white/60' 
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <span className="iconify text-2xl text-primary-500" data-icon={link.icon}></span>
+                <span className="text-sm font-medium truncate">{link.name}</span>
+              </a>
             ))}
           </div>
         </div>

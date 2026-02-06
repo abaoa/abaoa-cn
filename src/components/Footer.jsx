@@ -5,7 +5,11 @@ function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className={`py-8 mt-auto w-full ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
+    <footer 
+      className={`py-8 mt-auto w-full ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}
+      role="contentinfo"
+      aria-label="页脚"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-6">
           {/* 顶部：版权和备案信息 */}
