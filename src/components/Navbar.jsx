@@ -1,11 +1,19 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
+import { useState } from 'react'
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isActive = (path) => location.pathname === path
+
+  const navItems = [
+    { path: '/', label: '首页', icon: '🏠' },
+    { path: '/works', label: '作品', icon: '🎨' },
+    { path: '/about', label: '关于', icon: '👤' }
+  ]
 
   return (
     <nav className={`py-4 px-6 sticky top-0 z-50 ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
@@ -18,12 +26,9 @@ function Navbar() {
         </Link>
         
         <div className="flex items-center space-x-2 md:space-x-8">
+          {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-2">
-            {[
-              { path: '/', label: '首页', icon: '🏠' },
-              { path: '/works', label: '作品', icon: '🎨' },
-              { path: '/about', label: '关于', icon: '👤' }
-            ].map(item => (
+            {navItems.map(item => (
               <Link 
                 key={item.path}
                 to={item.path}
@@ -39,6 +44,7 @@ function Navbar() {
             ))}
           </div>
           
+          {/* Theme Toggle Button */}
           <button 
             className={`p-2 rounded-full glass-button flex items-center justify-center ${
               theme === 'light' ? 'text-primary-500' : 'text-primary-300'
@@ -64,8 +70,53 @@ function Navbar() {
               </svg>
             )}
           </button>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 rounded-full glass-button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="切换菜单"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {mobileMenuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className={`md:hidden mt-4 p-4 rounded-2xl ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
+          <div className="flex flex-col space-y-2">
+            {navItems.map(item => (
+              <Link 
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-3 ${
+                  isActive(item.path)
+                    ? 'bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
+                    : 'hover:bg-white/20 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

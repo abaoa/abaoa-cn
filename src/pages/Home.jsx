@@ -5,7 +5,7 @@ function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh]">
-      <div className={`p-12 rounded-3xl text-center animate-float ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card max-w-4xl mx-4`}>
+      <div className={`p-12 rounded-3xl text-center ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card max-w-4xl mx-4`}>
         <div className="mb-8">
           <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-6 ${
             theme === 'light' 
