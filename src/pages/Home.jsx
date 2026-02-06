@@ -1,7 +1,51 @@
 import { useTheme } from '../contexts/ThemeContext'
+import { useState, useEffect } from 'react'
+
+function TypeWriter({ text, speed = 100 }) {
+  const [displayText, setDisplayText] = useState('')
+  const [showCursor, setShowCursor] = useState(true)
+
+  useEffect(() => {
+    let index = 0
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayText(text.slice(0, index + 1))
+        index++
+      } else {
+        clearInterval(timer)
+      }
+    }, speed)
+
+    return () => clearInterval(timer)
+  }, [text, speed])
+
+  // 光标闪烁效果
+  useEffect(() => {
+    const cursorTimer = setInterval(() => {
+      setShowCursor(prev => !prev)
+    }, 500)
+    return () => clearInterval(cursorTimer)
+  }, [])
+
+  return (
+    <span>
+      {displayText}
+      <span className={`inline-block w-0.5 h-6 ml-1 bg-primary-500 ${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-100`}></span>
+    </span>
+  )
+}
 
 function Home() {
   const { theme } = useTheme()
+  const [showSubtitle, setShowSubtitle] = useState(false)
+
+  useEffect(() => {
+    // 打字完成后显示副标题
+    const timer = setTimeout(() => {
+      setShowSubtitle(true)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh]">
@@ -20,11 +64,17 @@ function Home() {
           欢迎来到 abaoa.cn
         </h1>
         
-        <p className="text-xl md:text-2xl text-center max-w-3xl mb-12 leading-relaxed">
-          一个展示个人作品和技能的平台，采用现代苹果液态玻璃风格设计，为您带来极致的视觉体验。
-        </p>
+        <div className="text-xl md:text-2xl text-center max-w-3xl mb-12 leading-relaxed min-h-[4rem]">
+          <TypeWriter text="我是一名 Qt/C++ 开发工程师，专注于跨平台桌面应用开发。" speed={80} />
+        </div>
         
-        <div className="flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto">
+        {showSubtitle && (
+          <p className="text-lg text-center max-w-2xl mb-8 opacity-70 animate-fade-in">
+            热爱技术，追求极致，致力于创造优秀的软件产品。
+          </p>
+        )}
+        
+        <div className={`flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto transition-all duration-500 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <a 
             href="/works" 
             className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600"
@@ -39,7 +89,7 @@ function Home() {
           </a>
         </div>
         
-        <div className="mt-12 flex justify-center gap-8">
+        <div className={`mt-12 flex justify-center gap-8 transition-all duration-500 delay-200 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center">
             <div className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-purple-500 bg-clip-text text-transparent">10+</div>
             <div className="text-sm mt-1 opacity-70">项目经验</div>

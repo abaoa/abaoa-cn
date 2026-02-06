@@ -10,13 +10,23 @@ function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-center md:text-left">
             <p className="text-sm opacity-70">
-              © {currentYear} abaoa.cn. All rights reserved.
+              © 2021-{currentYear} abaoa.cn. All rights reserved.
+            </p>
+            <p className="text-xs opacity-50 mt-1">
+              <a 
+                href="https://beian.miit.gov.cn/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:opacity-80 transition-opacity"
+              >
+                粤ICP备2021096813号-1
+              </a>
             </p>
           </div>
           
           <div className="flex items-center gap-6">
             <a 
-              href="https://github.com" 
+              href="https://github.com/abaoa" 
               target="_blank" 
               rel="noopener noreferrer"
               className="opacity-70 hover:opacity-100 transition-opacity"
@@ -27,7 +37,7 @@ function Footer() {
               </svg>
             </a>
             <a 
-              href="mailto:contact@abaoa.cn" 
+              href="mailto:abaoa@abaoa.cn" 
               className="opacity-70 hover:opacity-100 transition-opacity"
               aria-label="Email"
             >
