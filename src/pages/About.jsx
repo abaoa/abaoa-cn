@@ -4,14 +4,12 @@ function About() {
   const { theme } = useTheme()
 
   const skills = [
-    { name: 'React', level: 95, icon: '⚛️' },
-    { name: 'Vue.js', level: 90, icon: '💚' },
-    { name: 'TypeScript', level: 88, icon: '📘' },
-    { name: 'Node.js', level: 85, icon: '🟢' },
-    { name: 'Tailwind CSS', level: 92, icon: '🎨' },
-    { name: 'Git', level: 90, icon: '📚' },
-    { name: 'Docker', level: 80, icon: '🐳' },
-    { name: 'GraphQL', level: 85, icon: '◈' }
+    { name: 'Qt', level: 92, icon: 'simple-icons:qt' },
+    { name: 'C++', level: 80, icon: 'simple-icons:cplusplus' },
+    { name: 'CMake', level: 60, icon: 'simple-icons:cmake' },
+    { name: 'Git', level: 70, icon: 'simple-icons:git' },
+    { name: 'Python', level: 40, icon: 'simple-icons:python' },
+    { name: 'Linux', level: 75, icon: 'simple-icons:linux' }
   ]
 
   return (
@@ -34,7 +32,7 @@ function About() {
           <div className="relative">
             <div className="w-56 h-56 rounded-full overflow-hidden border-4 border-gradient-to-r from-primary-500 to-purple-500 shadow-2xl">
               <img 
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20portrait%20photo%20of%20a%20developer%20with%20modern%20style&image_size=square" 
+                src="https://github.com/abaoa.png" 
                 alt="个人头像" 
                 className="w-full h-full object-cover"
               />
@@ -44,19 +42,19 @@ function About() {
                 ? 'bg-gradient-to-r from-primary-500 to-purple-500 text-white'
                 : 'bg-gradient-to-r from-primary-600 to-purple-600 text-white'
             }`}>
-              5年+ 经验
+              10年+ 经验
             </div>
           </div>
           
           <div className="flex-1 text-center md:text-left">
             <h2 className="text-3xl font-bold mb-4">你好，我是 abaoa</h2>
             <p className="text-lg mb-6 leading-relaxed">
-              我是一名前端开发工程师，专注于创建美观、实用的网站和应用。
+              我是一名 Qt/C++ 开发工程师，专注于创建高性能、跨平台的桌面应用程序。
               我热爱学习新技术，不断提升自己的技能水平，追求极致的用户体验。
             </p>
             <p className="text-lg leading-relaxed opacity-80">
-              我的技术栈涵盖现代前端开发的各个方面，从 React、Vue.js 到 Node.js、GraphQL。
-              我擅长创建响应式设计，确保网站在各种设备上都能完美展示。
+              我的技术栈以 C++ 和 Qt 框架为核心，擅长开发 Windows、Linux、macOS 跨平台应用。
+              同时也具备现代前端开发能力，能够打造精美的用户界面和流畅的交互体验。
             </p>
           </div>
         </div>
@@ -73,7 +71,7 @@ function About() {
               <div key={skill.name} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold flex items-center gap-2">
-                    <span className="text-xl">{skill.icon}</span>
+                    <span className="iconify" data-icon={skill.icon} style={{ fontSize: '20px' }}></span>
                     {skill.name}
                   </span>
                   <span className="text-sm opacity-70">{skill.level}%</span>
@@ -98,9 +96,9 @@ function About() {
           
           <div className="space-y-6">
             {[
-              { company: '科技公司 A', role: '高级前端工程师', period: '2022 - 至今', desc: '负责核心产品的前端架构设计和开发，带领团队完成多个重要项目。' },
-              { company: '互联网公司 B', role: '前端开发工程师', period: '2020 - 2022', desc: '参与公司主要产品的开发，优化用户界面和交互体验。' },
-              { company: '初创公司 C', role: '全栈开发工程师', period: '2019 - 2020', desc: '负责公司产品从零到一的开发，搭建完整的技术栈。' }
+              { company: '科技公司 A', role: '高级 C++ 工程师', period: '2022 - 至今', desc: '负责核心产品的 Qt 桌面应用架构设计和开发，带领团队完成多个跨平台项目。' },
+              { company: '互联网公司 B', role: 'C++ / Qt 开发工程师', period: '2020 - 2022', desc: '参与公司主要产品的 Qt 客户端开发，优化软件性能和用户交互体验。' },
+              { company: '初创公司 C', role: '软件工程师', period: '2019 - 2020', desc: '负责公司产品从零到一的开发，使用 Qt 搭建完整的桌面应用解决方案。' }
             ].map((item, index) => (
               <div key={index} className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'} hover:bg-opacity-40 transition-all duration-300`}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
