@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Works from './pages/Works'
+import WorkDetail from './pages/WorkDetail'
 import About from './pages/About'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="works" element={<Works />} />
+            <Route path="works/:id" element={<WorkDetail />} />
             <Route path="about" element={<About />} />
           </Route>
         </Routes>
