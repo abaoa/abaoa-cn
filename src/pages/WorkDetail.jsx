@@ -1,0 +1,378 @@
+import { useTheme } from '../contexts/ThemeContext'
+import { useParams, Link } from 'react-router-dom'
+import { works } from '../data/works'
+import { useEffect, useState } from 'react'
+
+// 检测用户操作系统
+function detectPlatform() {
+  const userAgent = navigator.userAgent.toLowerCase()
+  if (userAgent.indexOf('win') > -1) return 'windows'
+  if (userAgent.indexOf('mac') > -1) return 'macos'
+  if (userAgent.indexOf('linux') > -1) return 'linux'
+  return 'unknown'
+}
+
+// 获取平台显示名称
+function getPlatformName(platform) {
+  const names = {
+    windows: 'Windows',
+    macos: 'macOS',
+    linux: 'Linux'
+  }
+  return names[platform] || platform
+}
+
+// 获取平台图标
+function getPlatformIcon(platform) {
+  const icons = {
+    windows: 'simple-icons:windows',
+    macos: 'simple-icons:apple',
+    linux: 'simple-icons:linux'
+  }
+  return icons[platform] || 'simple-icons:computer'
+}
+
+function WorkDetail() {
+  const { theme } = useTheme()
+  const { id } = useParams()
+  const [userPlatform, setUserPlatform] = useState('unknown')
+
+  const work = works.find(w => w.id === parseInt(id))
+
+  useEffect(() => {
+    setUserPlatform(detectPlatform())
+    // 滚动到页面顶部
+    window.scrollTo(0, 0)
+  }, [id])
+
+  if (!work) {
+    return (
+      <div className="py-20 text-center">
+        <h1 className="text-4xl font-bold mb-4">作品未找到</h1>
+        <p className="opacity-70 mb-6">抱歉，您访问的作品不存在。</p>
+        <Link 
+          to="/works" 
+          className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold ${
+            theme === 'light' 
+              ? 'bg-primary-500 text-white' 
+              : 'bg-primary-500/80 text-white'
+          }`}
+        >
+          <span className="iconify" data-icon="simple-icons:arrow-left" style={{ fontSize: '18px' }}></span>
+          返回作品列表
+        </Link>
+      </div>
+    )
+  }
+
+  const downloads = work.downloads?.latest || {}
+  const historyDownloads = work.downloads?.history || []
+  const availablePlatforms = Object.keys(downloads)
+  const isCurrentPlatformSupported = availablePlatforms.includes(userPlatform)
+
+  return (
+    <div className="py-8 min-h-[80vh]">
+      {/* 返回导航 */}
+      <div className="mb-6">
+        <Link 
+          to="/works"
+          className={`inline-flex items-center gap-2 text-sm font-medium transition-colors ${
+            theme === 'light' ? 'text-gray-600 hover:text-primary-600' : 'text-gray-400 hover:text-primary-400'
+          }`}
+        >
+          <span className="iconify" data-icon="simple-icons:arrow-left" style={{ fontSize: '16px' }}></span>
+          返回作品列表
+        </Link>
+      </div>
+
+      {/* 作品头部 */}
+      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-white/50' : 'bg-white/10'}`}>
+            <span className="iconify text-6xl text-primary-500" data-icon={work.icon}></span>
+          </div>
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold">{work.title}</h1>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                theme === 'light'
+                  ? 'bg-primary-500/20 text-primary-600 border border-primary-500/30'
+                  : 'bg-primary-500/30 text-primary-300 border border-primary-500/40'
+              }`}>
+                v{work.latestVersion}
+              </span>
+            </div>
+            <p className={`text-lg mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+              {work.description}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {work.tags.map(tag => (
+                <span 
+                  key={tag}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    theme === 'light'
+                      ? 'bg-white/50 text-gray-700 border border-gray-200'
+                      : 'bg-white/10 text-gray-300 border border-white/20'
+                  }`}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 下载区域 */}
+      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="iconify text-primary-500" data-icon="simple-icons:download" style={{ fontSize: '24px' }}></span>
+          下载
+        </h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div>
+            <p className="text-sm opacity-60 mb-1">最新版本</p>
+            <p className="text-xl font-semibold">{work.latestVersion}</p>
+          </div>
+          <div>
+            <p className="text-sm opacity-60 mb-1">发布日期</p>
+            <p className="text-xl font-semibold">{work.releaseDate}</p>
+          </div>
+          <div>
+            <p className="text-sm opacity-60 mb-1">文件大小</p>
+            <p className="text-xl font-semibold">{work.fileSize}</p>
+          </div>
+          <div>
+            <p className="text-sm opacity-60 mb-1">支持平台</p>
+            <div className="flex gap-2 mt-1">
+              {work.platforms.map(p => (
+                <span key={p} className="text-sm px-2 py-1 rounded bg-primary-500/20">{p}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm opacity-60 mb-6">
+          <span>MD5:</span>
+          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs">{work.md5}</code>
+        </div>
+
+        {/* 智能下载按钮 */}
+        {isCurrentPlatformSupported ? (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-green-500/10' : 'bg-green-500/20'} border border-green-500/30`}>
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm mb-3">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>检测到您的系统是 {getPlatformName(userPlatform)}，已为您推荐适合的版本</span>
+              </div>
+              <a 
+                href={downloads[userPlatform].url}
+                className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-lg hover:opacity-90 transition-opacity"
+              >
+                <span className="iconify" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }}></span>
+                <span>下载 {getPlatformName(userPlatform)} 版本</span>
+                <span className="text-base font-normal opacity-80">({downloads[userPlatform].size})</span>
+              </a>
+            </div>
+            
+            {availablePlatforms.length > 1 && (
+              <div className="pt-2">
+                <p className="text-sm opacity-60 mb-3">其他平台版本：</p>
+                <div className="flex flex-wrap gap-3">
+                  {availablePlatforms
+                    .filter(p => p !== userPlatform)
+                    .map(platform => (
+                      <a
+                        key={platform}
+                        href={downloads[platform].url}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                          theme === 'light'
+                            ? 'bg-white/50 hover:bg-white/70 text-gray-700'
+                            : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                        }`}
+                      >
+                        <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
+                        {getPlatformName(platform)}
+                      </a>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : availablePlatforms.length > 0 ? (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-amber-500/10' : 'bg-amber-500/20'} border border-amber-500/30`}>
+              <div className="flex items-start gap-3">
+                <svg className="w-6 h-6 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="font-medium text-amber-600 dark:text-amber-400">
+                    暂不支持 {getPlatformName(userPlatform) || '您的系统'}
+                  </p>
+                  <p className="text-sm opacity-70 mt-1">
+                    该软件目前仅支持以下平台，请选择适合您的版本下载：
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {availablePlatforms.map(platform => (
+                <a
+                  key={platform}
+                  href={downloads[platform].url}
+                  className={`flex items-center justify-center gap-3 py-4 rounded-xl font-semibold transition-colors ${
+                    theme === 'light'
+                      ? 'bg-white/60 hover:bg-white/80 text-gray-800'
+                      : 'bg-white/10 hover:bg-white/20 text-gray-200'
+                  }`}
+                >
+                  <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
+                  <span>{getPlatformName(platform)}</span>
+                  <span className="text-sm opacity-60">({downloads[platform].size})</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={`p-6 rounded-2xl text-center ${theme === 'light' ? 'bg-gray-500/10' : 'bg-gray-500/20'} border border-gray-500/30`}>
+            <p className="opacity-70">暂无可用下载</p>
+            <p className="text-sm opacity-50 mt-1">请稍后查看或联系开发者</p>
+          </div>
+        )}
+      </div>
+
+      {/* 功能特性 */}
+      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="iconify text-primary-500" data-icon="simple-icons:star" style={{ fontSize: '24px' }}></span>
+          功能特性
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {work.features.map((feature, index) => (
+            <div 
+              key={index}
+              className={`flex items-center gap-3 p-4 rounded-xl ${
+                theme === 'light' ? 'bg-white/30' : 'bg-white/5'
+              }`}
+            >
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm">✓</span>
+              <span>{feature}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 系统要求 */}
+      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="iconify text-primary-500" data-icon="simple-icons:computer" style={{ fontSize: '24px' }}></span>
+          系统要求
+        </h2>
+        <div className="space-y-4">
+          {work.systemRequirements.windows && (
+            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
+              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:windows"></span>
+              <div>
+                <p className="font-medium">Windows</p>
+                <p className="text-sm opacity-70">{work.systemRequirements.windows}</p>
+              </div>
+            </div>
+          )}
+          {work.systemRequirements.linux && (
+            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
+              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:linux"></span>
+              <div>
+                <p className="font-medium">Linux</p>
+                <p className="text-sm opacity-70">{work.systemRequirements.linux}</p>
+              </div>
+            </div>
+          )}
+          {work.systemRequirements.macos && (
+            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
+              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:apple"></span>
+              <div>
+                <p className="font-medium">macOS</p>
+                <p className="text-sm opacity-70">{work.systemRequirements.macos}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 更新日志 */}
+      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="iconify text-primary-500" data-icon="simple-icons:history" style={{ fontSize: '24px' }}></span>
+          更新日志
+        </h2>
+        <div className="space-y-6">
+          {work.changelog.map((log, index) => (
+            <div key={index} className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <span className="px-3 py-1 rounded-full text-sm font-bold bg-primary-500 text-white">v{log.version}</span>
+                <span className="text-sm opacity-60">{log.date}</span>
+              </div>
+              <ul className="space-y-2">
+                {log.changes.map((change, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm opacity-80">
+                    <span className="text-primary-500 mt-1">•</span>
+                    <span>{change}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 历史版本下载 */}
+      {historyDownloads.length > 0 && (
+        <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8`}>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="iconify text-primary-500" data-icon="simple-icons:archive" style={{ fontSize: '24px' }}></span>
+            历史版本下载
+          </h2>
+          <div className="space-y-4">
+            {historyDownloads.map((oldVersion, index) => (
+              <div 
+                key={index} 
+                className={`p-5 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full text-sm font-bold bg-gray-500 text-white">v{oldVersion.version}</span>
+                    <span className="text-sm opacity-60">{oldVersion.date}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {Object.entries(oldVersion.downloads).map(([platform, file]) => (
+                    <a
+                      key={platform}
+                      href={file.url}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        theme === 'light'
+                          ? 'bg-white/60 hover:bg-white/80 text-gray-700'
+                          : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                      }`}
+                    >
+                      <span className="iconify" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
+                      <span>{getPlatformName(platform)}</span>
+                      <span className="text-xs opacity-60">({file.size})</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default WorkDetail
