@@ -2,7 +2,6 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import AnimatedCounter from '../components/AnimatedCounter'
-import { works } from '../data/works'
 
 function TypeWriter({ text, speed = 100, onComplete }) {
   const [displayText, setDisplayText] = useState('')
@@ -46,6 +45,7 @@ function TypeWriter({ text, speed = 100, onComplete }) {
 function Home() {
   const { theme } = useTheme()
   const [showSubtitle, setShowSubtitle] = useState(false)
+  const [works, setWorks] = useState([])
 
   useEffect(() => {
     // 打字完成后显示副标题
@@ -53,6 +53,19 @@ function Home() {
       setShowSubtitle(true)
     }, 2500)
     return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    async function loadWorks() {
+      try {
+        const response = await fetch('/works/manifest.json')
+        const manifest = await response.json()
+        setWorks(manifest.works || [])
+      } catch (error) {
+        console.error('Failed to load works:', error)
+      }
+    }
+    loadWorks()
   }, [])
 
   return (
@@ -63,13 +76,13 @@ function Home() {
         aria-labelledby="hero-title"
       >
         <div className="mb-8">
-          <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-6 ${
+          <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-6 ${
             theme === 'light' 
               ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
               : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
           }`}>
-            <span aria-hidden="true">✨</span>
-            <span className="ml-1">液态玻璃设计风格</span>
+            <span className="iconify flex-shrink-0" data-icon="lucide:sparkles" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+            <span>液态玻璃设计风格</span>
           </div>
         </div>
         
@@ -91,19 +104,19 @@ function Home() {
           <div className={`flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto transition-all duration-500 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <a 
               href="/works" 
-              className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="glass-button flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600"
               aria-label="查看我的作品集"
             >
-              <span aria-hidden="true">🎨 </span>
-              查看作品
+              <span className="iconify flex-shrink-0" data-icon="lucide:palette" style={{ fontSize: '18px' }} aria-hidden="true"></span>
+              <span>查看作品</span>
             </a>
             <a 
               href="/about" 
-              className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="glass-button flex-1 inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600"
               aria-label="了解更多关于我的信息"
             >
-              <span aria-hidden="true">💡 </span>
-              了解更多
+              <span className="iconify flex-shrink-0" data-icon="lucide:lightbulb" style={{ fontSize: '18px' }} aria-hidden="true"></span>
+              <span>了解更多</span>
             </a>
           </div>
         </nav>
@@ -148,7 +161,7 @@ function Home() {
           {works.slice(0, 4).map((work, index) => (
             <Link
               key={work.id}
-              to={`/works/${work.id}`}
+              to={`/works/${work.id}/version/${work.latestVersion}`}
               role="listitem"
               className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl p-5 hover:scale-105 transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
               style={{ animationDelay: `${index * 0.1}s` }}

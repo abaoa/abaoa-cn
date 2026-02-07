@@ -16,13 +16,13 @@ function About() {
   return (
     <section className="py-12 min-h-[80vh]" aria-labelledby="about-title">
       <header className="text-center mb-12">
-        <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-4 ${
+        <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
             ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
             : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
         }`}>
-          <span aria-hidden="true">👋</span>
-          <span className="ml-1">关于我</span>
+          <span className="iconify flex-shrink-0" data-icon="lucide:hand" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+          <span>关于我</span>
         </div>
         <h1 id="about-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           了解更多

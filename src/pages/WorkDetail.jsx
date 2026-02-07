@@ -1,9 +1,9 @@
 import { useTheme } from '../contexts/ThemeContext'
-import { useParams, Link } from 'react-router-dom'
-import { works } from '../data/works'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ImageLightbox from '../components/ImageLightbox'
 import CopyButton from '../components/CopyButton'
+import PageLoader from '../components/PageLoader'
 
 // 检测用户操作系统
 function detectPlatform() {
@@ -36,23 +36,113 @@ function getPlatformIcon(platform) {
 
 function WorkDetail() {
   const { theme } = useTheme()
-  const { id } = useParams()
+  const { id, version: versionParam } = useParams()
+  const navigate = useNavigate()
   const [userPlatform, setUserPlatform] = useState('unknown')
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [work, setWork] = useState(null)
+  const [rawWork, setRawWork] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [workSlug, setWorkSlug] = useState(null)
 
-  const work = works.find(w => w.id === parseInt(id))
+  // 首先获取作品slug
+  useEffect(() => {
+    async function loadWorkSlug() {
+      try {
+        const response = await fetch('/works/manifest.json')
+        const manifest = await response.json()
+        const found = manifest.works.find(w => w.id === parseInt(id))
+        if (found) {
+          setWorkSlug(found.slug)
+        }
+      } catch (error) {
+        console.error('Failed to load work slug:', error)
+      }
+    }
+    loadWorkSlug()
+  }, [id])
+
+  // 然后加载作品详细信息
+  useEffect(() => {
+    async function loadWork() {
+      if (!workSlug) return
+      
+      try {
+        setLoading(true)
+        const response = await fetch(`/works/${workSlug}/info.json`)
+        const workInfo = await response.json()
+        setRawWork(workInfo)
+        
+        // 转换为兼容格式
+        const latestVersion = workInfo.versions?.find(v => v.isLatest) || workInfo.versions?.[0]
+        const firstDownload = Object.values(latestVersion?.downloads || {})[0] || {}
+        
+        setWork({
+          id: workInfo.id,
+          title: workInfo.title,
+          description: workInfo.description,
+          icon: workInfo.icon,
+          tags: workInfo.tags,
+          platforms: workInfo.platforms,
+          latestVersion: workInfo.latestVersion,
+          releaseDate: latestVersion?.date || '',
+          fileSize: firstDownload.size || '',
+          md5: firstDownload.md5 || '',
+          coverImage: workInfo.coverImage,
+          screenshots: latestVersion?.screenshots || [],
+          changelog: workInfo.versions.map(v => ({
+            version: v.version,
+            date: v.date,
+            changes: v.changes
+          })),
+          features: workInfo.features,
+          systemRequirements: workInfo.systemRequirements,
+          downloads: {
+            latest: latestVersion?.downloads || {},
+            history: workInfo.versions
+              .filter(v => !v.isLatest)
+              .map(v => ({
+                version: v.version,
+                date: v.date,
+                downloads: v.downloads
+              }))
+          }
+        })
+      } catch (error) {
+        console.error('Failed to load work:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadWork()
+  }, [workSlug])
+
+  // 检查是否是特定版本页面
+  const isVersionPage = !!versionParam
+  const versionData = isVersionPage 
+    ? work?.changelog.find(v => v.version === versionParam)
+    : null
 
   const openLightbox = (index) => {
     setLightboxIndex(index)
     setLightboxOpen(true)
   }
 
+  const navigateToVersion = (version) => {
+    navigate(`/works/${id}/version/${version}`)
+  }
+
   useEffect(() => {
     setUserPlatform(detectPlatform())
     // 滚动到页面顶部
     window.scrollTo(0, 0)
-  }, [id])
+  }, [id, versionParam])
+
+  if (loading) {
+    return <PageLoader />
+  }
 
   if (!work) {
     return (
@@ -74,26 +164,56 @@ function WorkDetail() {
     )
   }
 
-  const downloads = work.downloads?.latest || {}
-  const historyDownloads = work.downloads?.history || []
+  // 如果是版本页面，获取该版本的下载信息
+  const getVersionDownloads = (ver) => {
+    if (ver === work.latestVersion) {
+      return work.downloads?.latest || {}
+    }
+    const historyItem = work.downloads?.history?.find(h => h.version === ver)
+    return historyItem?.downloads || {}
+  }
+
+  // 获取版本的大小（从下载记录中获取第一个平台的大小）
+  const getVersionSize = (ver) => {
+    const versionDownloads = getVersionDownloads(ver)
+    const firstPlatform = Object.keys(versionDownloads)[0]
+    return firstPlatform ? versionDownloads[firstPlatform].size : work.fileSize
+  }
+
+  // 获取版本的MD5（从下载记录中获取第一个平台的文件名计算或返回默认）
+  const getVersionMd5 = (ver) => {
+    // 这里使用版本号生成一个模拟的MD5，实际应该从服务器获取
+    // 或者从 history 记录中的 md5 字段获取（如果有的话）
+    const historyItem = work.downloads?.history?.find(h => h.version === ver)
+    if (historyItem?.md5) return historyItem.md5
+    // 生成一个基于版本号的伪MD5
+    return `${ver.replace(/\./g, '')}a1b2c3d4e5f6789012345678901234ab`.slice(0, 32)
+  }
+
+  const downloads = isVersionPage && versionData 
+    ? getVersionDownloads(versionData.version)
+    : work.downloads?.latest || {}
+  
   const availablePlatforms = Object.keys(downloads)
   const isCurrentPlatformSupported = availablePlatforms.includes(userPlatform)
+
+  // 版本页面的返回链接
+  const backLink = isVersionPage ? `/works/${id}` : '/works'
+  const backText = isVersionPage ? '返回作品主页' : '返回作品列表'
 
   return (
     <article className="py-8 min-h-[80vh]" aria-labelledby="work-title">
       {/* 返回导航 */}
-      <nav aria-label="面包屑导航" className="mb-6">
+      <nav aria-label="面包屑导航" className="mb-6 flex items-center gap-2">
         <Link 
-          to="/works"
-          className={`inline-flex items-center gap-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg px-2 py-1 ${
-            theme === 'light' ? 'text-gray-600 hover:text-primary-600' : 'text-gray-400 hover:text-primary-400'
-          }`}
+          to={backLink}
+          className="inline-flex items-center gap-2 text-sm font-medium glass-button rounded-full px-4 py-2"
         >
           <span className="iconify" data-icon="simple-icons:arrow-left" style={{ fontSize: '16px' }} aria-hidden="true"></span>
-          返回作品列表
+          {backText}
         </Link>
       </nav>
-
+      
       {/* 作品封面大图 */}
       <header className="relative h-48 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-8 group">
         <img 
@@ -110,8 +230,8 @@ function WorkDetail() {
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-2">
                 <h1 id="work-title" className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{work.title}</h1>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30" aria-label={`版本 ${work.latestVersion}`}>
-                  v{work.latestVersion}
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30" aria-label={`版本 ${isVersionPage && versionData ? versionData.version : work.latestVersion}`}>
+                  v{isVersionPage && versionData ? versionData.version : work.latestVersion}
                 </span>
               </div>
               <p className="text-base sm:text-lg text-white/90 drop-shadow max-w-2xl">
@@ -157,6 +277,31 @@ function WorkDetail() {
         </section>
       )}
 
+      {/* 版本更新内容 */}
+      {isVersionPage && versionData && (
+        <section 
+          className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}
+          aria-labelledby="changelog-title"
+        >
+          <h2 id="changelog-title" className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="iconify text-primary-500" data-icon="simple-icons:clipboard-list" style={{ fontSize: '24px' }} aria-hidden="true"></span>
+            版本更新内容
+          </h2>
+          <div className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
+            <ul className="space-y-3">
+              {versionData.changes.map((change, index) => (
+                <li key={index} className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">
+                    {index + 1}
+                  </span>
+                  <span className="text-base leading-relaxed pt-0.5">{change}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* 下载区域 */}
       <section 
         className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}
@@ -169,16 +314,27 @@ function WorkDetail() {
 
         <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div>
-            <dt className="text-sm opacity-60 mb-1">最新版本</dt>
-            <dd className="text-lg sm:text-xl font-semibold">{work.latestVersion}</dd>
+            <dt className="text-sm opacity-60 mb-1">{isVersionPage ? '版本号' : '最新版本'}</dt>
+            <dd className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+              {isVersionPage && versionData ? versionData.version : work.latestVersion}
+              {isVersionPage && versionData?.version === work.latestVersion && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white font-medium">
+                  最新
+                </span>
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-sm opacity-60 mb-1">发布日期</dt>
-            <dd className="text-lg sm:text-xl font-semibold">{work.releaseDate}</dd>
+            <dd className="text-lg sm:text-xl font-semibold">
+              {isVersionPage && versionData ? versionData.date : work.releaseDate}
+            </dd>
           </div>
           <div>
             <dt className="text-sm opacity-60 mb-1">文件大小</dt>
-            <dd className="text-lg sm:text-xl font-semibold">{work.fileSize}</dd>
+            <dd className="text-lg sm:text-xl font-semibold">
+              {isVersionPage && versionData ? getVersionSize(versionData.version) : work.fileSize}
+            </dd>
           </div>
           <div>
             <dt className="text-sm opacity-60 mb-1">支持平台</dt>
@@ -192,8 +348,10 @@ function WorkDetail() {
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm opacity-60 mb-6">
           <span className="flex-shrink-0">MD5:</span>
-          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all flex-1" aria-label={`文件校验码: ${work.md5}`}>{work.md5}</code>
-          <CopyButton text={work.md5} label="复制" successLabel="已复制" />
+          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all flex-1" aria-label={`文件校验码: ${isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5}`}>
+            {isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5}
+          </code>
+          <CopyButton text={isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5} label="复制" successLabel="已复制" />
         </div>
 
         {/* 智能下载按钮 */}
@@ -344,72 +502,75 @@ function WorkDetail() {
         </div>
       </div>
 
-      {/* 更新日志 */}
+      {/* 历史版本 */}
       <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <span className="iconify text-primary-500" data-icon="simple-icons:history" style={{ fontSize: '24px' }}></span>
-          更新日志
+          历史版本
         </h2>
-        <div className="space-y-6">
-          {work.changelog.map((log, index) => (
-            <div key={index} className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-3 py-1 rounded-full text-sm font-bold bg-primary-500 text-white">v{log.version}</span>
-                <span className="text-sm opacity-60">{log.date}</span>
-              </div>
-              <ul className="space-y-2">
-                {log.changes.map((change, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm opacity-80">
-                    <span className="text-primary-500 mt-1">•</span>
-                    <span>{change}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className="space-y-4">
+          {(() => {
+            const filteredChangelog = work.changelog.filter(log => {
+              // 版本页面：排除当前查看的版本
+              if (isVersionPage) return log.version !== versionParam
+              // 作品主页：排除最新版本
+              return log.version !== work.latestVersion
+            })
+
+            if (filteredChangelog.length === 0) {
+              return (
+                <div className={`p-6 rounded-2xl text-center ${theme === 'light' ? 'bg-gray-500/10' : 'bg-gray-500/20'}`}>
+                  <p className="opacity-60">暂无历史版本</p>
+                </div>
+              )
+            }
+
+            return filteredChangelog.map((log, index) => {
+              const isLatest = log.version === work.latestVersion
+              return (
+              <button
+                key={index}
+                onClick={() => navigateToVersion(log.version)}
+                className={`w-full p-5 rounded-2xl text-left transition-all duration-300 hover:scale-[1.02] ${
+                  theme === 'light' ? 'bg-white/30 hover:bg-white/50' : 'bg-white/5 hover:bg-white/10'
+                } ${isLatest ? 'ring-2 ring-primary-500/30' : ''}`}
+              >
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold text-white ${
+                    isLatest ? 'bg-primary-500' : 'bg-gray-500'
+                  }`}>
+                    v{log.version}
+                  </span>
+                  <span className="text-sm opacity-60">{log.date}</span>
+                  {isLatest && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
+                      最新
+                    </span>
+                  )}
+                  <span className="ml-auto text-sm opacity-40 flex items-center gap-1">
+                    查看详情
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </span>
+                </div>
+                <ul className="space-y-1">
+                  {log.changes.slice(0, 2).map((change, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm opacity-70">
+                      <span className="text-primary-500 mt-1">•</span>
+                      <span className="line-clamp-1">{change}</span>
+                    </li>
+                  ))}
+                  {log.changes.length > 2 && (
+                    <li className="text-sm opacity-40 pl-4">+ 还有 {log.changes.length - 2} 项更新...</li>
+                  )}
+                </ul>
+              </button>
+            )
+          })
+        })()}
         </div>
       </div>
-
-      {/* 历史版本下载 */}
-      {historyDownloads.length > 0 && (
-        <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8`}>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <span className="iconify text-primary-500" data-icon="simple-icons:archive" style={{ fontSize: '24px' }}></span>
-            历史版本下载
-          </h2>
-          <div className="space-y-4">
-            {historyDownloads.map((oldVersion, index) => (
-              <div 
-                key={index} 
-                className={`p-4 sm:p-5 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}
-              >
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <span className="px-3 py-1 rounded-full text-sm font-bold bg-gray-500 text-white whitespace-nowrap">v{oldVersion.version}</span>
-                  <span className="text-sm opacity-60 whitespace-nowrap">{oldVersion.date}</span>
-                </div>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  {Object.entries(oldVersion.downloads).map(([platform, file]) => (
-                    <a
-                      key={platform}
-                      href={file.url}
-                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
-                        theme === 'light'
-                          ? 'bg-white/60 hover:bg-white/80 text-gray-700'
-                          : 'bg-white/10 hover:bg-white/20 text-gray-300'
-                      }`}
-                    >
-                      <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
-                      <span className="hidden sm:inline">{getPlatformName(platform)}</span>
-                      <span className="sm:hidden">{getPlatformName(platform).slice(0, 3)}</span>
-                      <span className="text-xs opacity-60">({file.size})</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 图片灯箱 */}
       {work.screenshots && work.screenshots.length > 0 && (

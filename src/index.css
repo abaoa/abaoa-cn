@@ -213,6 +213,23 @@ body {
   border-color: rgba(255, 255, 255, 0.35);
 }
 
+/* 选中状态的按钮 */
+.glass-button-active {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-button-active:hover {
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
 /* 卡片悬停效果 */
 .glass-card {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);

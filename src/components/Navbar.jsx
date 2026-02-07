@@ -23,9 +23,9 @@ function Navbar() {
   }
 
   const navItems = [
-    { path: '/', label: '首页', icon: '🏠' },
-    { path: '/works', label: '作品', icon: '🎨' },
-    { path: '/about', label: '关于', icon: '👤' }
+    { path: '/', label: '首页', icon: 'lucide:home' },
+    { path: '/works', label: '作品', icon: 'lucide:code' },
+    { path: '/about', label: '关于', icon: 'lucide:user' }
   ]
 
   return (
@@ -60,13 +60,13 @@ function Navbar() {
                 to={item.path}
                 role="menuitem"
                 aria-current={isActive(item.path) ? 'page' : undefined}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   isActive(item.path)
-                    ? 'bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
-                    : 'hover:bg-white/20 opacity-70 hover:opacity-100'
+                    ? 'glass-button-active bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
+                    : 'glass-button opacity-70 hover:opacity-100'
                 }`}
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <span className="iconify" data-icon={item.icon} style={{ fontSize: '16px' }} aria-hidden="true"></span>
                 <span>{item.label}</span>
               </Link>
             ))}
@@ -74,7 +74,7 @@ function Navbar() {
           
           {/* Theme Toggle Button */}
           <button 
-            className={`p-2 rounded-full glass-button flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+            className={`p-2 rounded-full glass-button flex items-center justify-center ${
               theme === 'light' ? 'text-primary-500' : 'text-primary-300'
             }`}
             onClick={toggleTheme}
@@ -102,7 +102,7 @@ function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-full glass-button focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="md:hidden p-2 rounded-full glass-button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? '关闭菜单' : '打开菜单'}
             aria-expanded={mobileMenuOpen}
@@ -141,13 +141,13 @@ function Navbar() {
                 role="menuitem"
                 aria-current={isActive(item.path) ? 'page' : undefined}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-3 ${
                   isActive(item.path)
-                    ? 'bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
-                    : 'hover:bg-white/20 opacity-70 hover:opacity-100'
+                    ? 'glass-button-active bg-gradient-to-r from-primary-500/30 to-purple-500/30 text-primary-500 border border-primary-500/40'
+                    : 'glass-button opacity-70 hover:opacity-100'
                 }`}
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <span className="iconify" data-icon={item.icon} style={{ fontSize: '18px' }} aria-hidden="true"></span>
                 <span>{item.label}</span>
               </Link>
             ))}

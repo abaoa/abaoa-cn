@@ -1,0 +1,76 @@
+{
+  "id": 3,
+  "slug": "dbmanager",
+  "title": "数据库管理工具",
+  "description": "支持 MySQL、PostgreSQL、SQLite 等多种数据库的可视化管理工具。",
+  "icon": "simple-icons:qt",
+  "tags": ["Qt5", "C++", "数据库"],
+  "platforms": ["Windows", "Linux", "macOS"],
+  "latestVersion": "3.0.1",
+  "features": ["多数据库支持", "可视化查询", "数据导入导出", "ER图生成", "性能监控"],
+  "systemRequirements": {
+    "windows": "Windows 10/11 64位",
+    "linux": "Ubuntu 20.04+",
+    "macos": "macOS 12.0+"
+  },
+  "versions": [
+    {
+      "version": "3.0.1",
+      "date": "2024-12-20",
+      "changes": ["修复连接池问题", "优化查询性能"],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "DBManager-v3.0.1-Windows.exe",
+          "size": "42.8 MB",
+          "md5": "c3d4e5f6789012345678901234abc5d6"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "DBManager-v3.0.1-Linux.AppImage",
+          "size": "45.2 MB",
+          "md5": "d4e5f6a789012345678901234bcd6e7"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "DBManager-v3.0.1-macOS.dmg",
+          "size": "44.1 MB",
+          "md5": "e5f6a789012345678901234cde7f8"
+        }
+      },
+      "screenshots": [
+        "/works/dbmanager/versions/3.0.1/screenshots/1.jpg"
+      ]
+    },
+    {
+      "version": "3.0.0",
+      "date": "2024-11-01",
+      "changes": ["全新UI设计", "支持Redis", "数据可视化"],
+      "isLatest": false,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "DBManager-v3.0.0-Windows.exe",
+          "size": "41.5 MB",
+          "md5": "f6a789012345678901234defa78901"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "DBManager-v3.0.0-Linux.AppImage",
+          "size": "44.1 MB",
+          "md5": "a789012345678901234efa8901234"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "DBManager-v3.0.0-macOS.dmg",
+          "size": "43.0 MB",
+          "md5": "b89012345678901234fab0123456"
+        }
+      },
+      "screenshots": [
+        "/works/dbmanager/versions/3.0.0/screenshots/1.jpg"
+      ]
+    }
+  ]
+}
