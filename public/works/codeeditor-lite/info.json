@@ -1,0 +1,63 @@
+{
+  "id": 2,
+  "slug": "codeeditor-lite",
+  "title": "代码编辑器 Lite",
+  "description": "轻量级代码编辑器，专为 Qt/C++ 开发设计，支持语法高亮、代码补全、调试等功能。",
+  "icon": "simple-icons:qt",
+  "tags": ["Qt6", "C++", "编辑器"],
+  "platforms": ["Windows", "Linux"],
+  "latestVersion": "1.8.2",
+  "features": ["语法高亮", "代码补全", "调试支持", "Git集成", "插件系统"],
+  "systemRequirements": {
+    "windows": "Windows 10 64位",
+    "linux": "Ubuntu 18.04+"
+  },
+  "versions": [
+    {
+      "version": "1.8.2",
+      "date": "2025-01-10",
+      "changes": ["修复语法高亮bug", "优化启动速度"],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "CodeEditorLite-v1.8.2-Windows.exe",
+          "size": "15.2 MB",
+          "md5": "b2c3d4e5f6789012345678901234abc5"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "CodeEditorLite-v1.8.2-Linux.AppImage",
+          "size": "18.5 MB",
+          "md5": "c3d4e5f6a789012345678901234bcd6"
+        }
+      },
+      "screenshots": [
+        "/works/codeeditor-lite/versions/1.8.2/screenshots/1.jpg"
+      ]
+    },
+    {
+      "version": "1.8.0",
+      "date": "2024-11-15",
+      "changes": ["新增插件系统", "支持LSP协议", "多语言支持"],
+      "isLatest": false,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "CodeEditorLite-v1.8.0-Windows.exe",
+          "size": "14.8 MB",
+          "md5": "d4e5f6a7b89012345678901234cdef7"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "CodeEditorLite-v1.8.0-Linux.AppImage",
+          "size": "18.1 MB",
+          "md5": "e5f6a7b8c9012345678901234defa8"
+        }
+      },
+      "screenshots": [
+        "/works/codeeditor-lite/versions/1.8.0/screenshots/1.jpg"
+      ]
+    }
+  ]
+}

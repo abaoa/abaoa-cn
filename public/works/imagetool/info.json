@@ -1,0 +1,40 @@
+{
+  "id": 4,
+  "slug": "imagetool",
+  "title": "图像处理工具",
+  "description": "专业的图像处理软件，支持批量处理、滤镜效果、格式转换等功能。",
+  "icon": "simple-icons:qt",
+  "tags": ["Qt6", "C++", "图像处理"],
+  "platforms": ["Windows", "macOS"],
+  "latestVersion": "1.2.0",
+  "features": ["批量处理", "滤镜效果", "格式转换", "AI抠图", "GPU加速"],
+  "systemRequirements": {
+    "windows": "Windows 10 64位",
+    "macos": "macOS 11.0+"
+  },
+  "versions": [
+    {
+      "version": "1.2.0",
+      "date": "2025-01-05",
+      "changes": ["新增AI抠图功能", "支持RAW格式", "GPU加速"],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "ImageTool-v1.2.0-Windows.exe",
+          "size": "35.6 MB",
+          "md5": "d4e5f6789012345678901234abc5d6e7"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "ImageTool-v1.2.0-macOS.dmg",
+          "size": "38.2 MB",
+          "md5": "e5f6789012345678901234bcd6e7f8"
+        }
+      },
+      "screenshots": [
+        "/works/imagetool/versions/1.2.0/screenshots/1.jpg"
+      ]
+    }
+  ]
+}

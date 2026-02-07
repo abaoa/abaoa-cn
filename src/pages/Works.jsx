@@ -1,21 +1,44 @@
 import { useTheme } from '../contexts/ThemeContext'
 import { useNavigate } from 'react-router-dom'
-import { works } from '../data/works'
+import { useState, useEffect } from 'react'
+import PageLoader from '../components/PageLoader'
 
 function Works() {
   const { theme } = useTheme()
   const navigate = useNavigate()
+  const [works, setWorks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadWorks() {
+      try {
+        const response = await fetch('/works/manifest.json')
+        const manifest = await response.json()
+        setWorks(manifest.works || [])
+      } catch (error) {
+        console.error('Failed to load works:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadWorks()
+  }, [])
+
+  if (loading) {
+    return <PageLoader />
+  }
 
   return (
     <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
       <header className="text-center mb-12">
-        <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-4 ${
+        <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
             ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
             : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
         }`}>
-          <span aria-hidden="true">💼</span>
-          <span className="ml-1">Qt 应用程序作品集</span>
+          <span className="iconify flex-shrink-0" data-icon="lucide:briefcase" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+          <span>Qt 应用程序作品集</span>
         </div>
         <h1 id="works-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           我的作品
@@ -29,12 +52,12 @@ function Works() {
         {works.map((work, index) => (
           <article
             key={work.id}
-            onClick={() => navigate(`/works/${work.id}`)}
+            onClick={() => navigate(`/works/${work.id}/version/${work.latestVersion}`)}
             className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-all duration-300 group focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2`}
             style={{ animationDelay: `${index * 0.1}s` }}
             role="listitem"
             tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && navigate(`/works/${work.id}`)}
+            onKeyDown={(e) => e.key === 'Enter' && navigate(`/works/${work.id}/version/${work.latestVersion}`)}
             aria-label={`${work.title} - ${work.description}`}
           >
             {/* 封面图 */}
@@ -83,7 +106,6 @@ function Works() {
                   {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                   {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                 </div>
-                <span className="text-xs" aria-label={`文件大小 ${work.fileSize}`}>{work.fileSize}</span>
               </div>
             </div>
           </article>

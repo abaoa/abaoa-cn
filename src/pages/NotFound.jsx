@@ -93,8 +93,9 @@ function NotFound() {
         
         {/* 趣味提示 */}
         <div className="mt-8 pt-8 border-t border-white/10">
-          <p className="text-sm opacity-40">
-            💡 提示: 试试点击导航栏或返回首页重新开始探索
+          <p className="text-sm opacity-40 flex items-center gap-1.5 justify-center">
+            <span className="iconify flex-shrink-0" data-icon="lucide:lightbulb" style={{ fontSize: '14px' }} aria-hidden="true"></span>
+            <span>提示: 试试点击导航栏或返回首页重新开始探索</span>
           </p>
         </div>
       </div>

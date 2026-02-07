@@ -1,0 +1,106 @@
+{
+  "id": 1,
+  "slug": "filemanager-pro",
+  "title": "文件管理器 Pro",
+  "description": "一款功能强大的跨平台文件管理工具，支持标签页、双窗格、文件预览等功能。",
+  "icon": "simple-icons:qt",
+  "tags": ["Qt6", "C++", "跨平台"],
+  "platforms": ["Windows", "Linux", "macOS"],
+  "latestVersion": "2.5.0",
+  "features": ["标签页浏览", "双窗格对比", "文件预览", "批量重命名", "快速搜索"],
+  "systemRequirements": {
+    "windows": "Windows 10/11 64位",
+    "linux": "Ubuntu 20.04+ / CentOS 8+",
+    "macos": "macOS 11.0+"
+  },
+  "versions": [
+    {
+      "version": "2.5.0",
+      "date": "2025-01-15",
+      "changes": ["新增标签页功能", "优化文件搜索速度", "修复内存泄漏问题"],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.5.0-Windows.exe",
+          "size": "28.5 MB",
+          "md5": "a1b2c3d4e5f6789012345678901234ab"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.5.0-Linux.AppImage",
+          "size": "32.1 MB",
+          "md5": "b1c2d3e4f5a6789012345678901234bc"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.5.0-macOS.dmg",
+          "size": "31.8 MB",
+          "md5": "c1d2e3f4a5b6789012345678901234cd"
+        }
+      },
+      "screenshots": [
+        "/works/filemanager-pro/versions/2.5.0/screenshots/1.jpg",
+        "/works/filemanager-pro/versions/2.5.0/screenshots/2.jpg"
+      ]
+    },
+    {
+      "version": "2.4.0",
+      "date": "2024-12-01",
+      "changes": ["添加深色模式", "支持云存储同步", "改进UI界面"],
+      "isLatest": false,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.4.0-Windows.exe",
+          "size": "27.8 MB",
+          "md5": "d4e5f6a7b8c9012345678901234de56f"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.4.0-Linux.AppImage",
+          "size": "31.5 MB",
+          "md5": "e5f6a7b8c9d012345678901234ef67a"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.4.0-macOS.dmg",
+          "size": "31.2 MB",
+          "md5": "f6a7b8c9d0e12345678901234fa78b"
+        }
+      },
+      "screenshots": [
+        "/works/filemanager-pro/versions/2.4.0/screenshots/1.jpg"
+      ]
+    },
+    {
+      "version": "2.3.0",
+      "date": "2024-10-20",
+      "changes": ["双窗格模式", "文件预览功能", "快捷键自定义"],
+      "isLatest": false,
+      "downloads": {
+        "windows": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.3.0-Windows.exe",
+          "size": "26.5 MB",
+          "md5": "a7b8c9d0e1f234567890123456789ab"
+        },
+        "linux": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.3.0-Linux.AppImage",
+          "size": "30.2 MB",
+          "md5": "b8c9d0e1f2a34567890123456789bc"
+        },
+        "macos": {
+          "url": "#",
+          "filename": "FileManagerPro-v2.3.0-macOS.dmg",
+          "size": "29.8 MB",
+          "md5": "c9d0e1f2a3b4567890123456789cd"
+        }
+      },
+      "screenshots": [
+        "/works/filemanager-pro/versions/2.3.0/screenshots/1.jpg"
+      ]
+    }
+  ]
+}
