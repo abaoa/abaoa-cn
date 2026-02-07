@@ -2,6 +2,8 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useParams, Link } from 'react-router-dom'
 import { works } from '../data/works'
 import { useEffect, useState } from 'react'
+import ImageLightbox from '../components/ImageLightbox'
+import CopyButton from '../components/CopyButton'
 
 // 检测用户操作系统
 function detectPlatform() {
@@ -36,8 +38,15 @@ function WorkDetail() {
   const { theme } = useTheme()
   const { id } = useParams()
   const [userPlatform, setUserPlatform] = useState('unknown')
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   const work = works.find(w => w.id === parseInt(id))
+
+  const openLightbox = (index) => {
+    setLightboxIndex(index)
+    setLightboxOpen(true)
+  }
 
   useEffect(() => {
     setUserPlatform(detectPlatform())
@@ -128,8 +137,8 @@ function WorkDetail() {
               <button
                 key={index}
                 className="relative rounded-2xl overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                onClick={() => window.open(screenshot, '_blank')}
-                aria-label={`在新窗口打开${work.title}截图 ${index + 1}`}
+                onClick={() => openLightbox(index)}
+                aria-label={`查看${work.title}截图 ${index + 1}`}
               >
                 <img 
                   src={screenshot} 
@@ -183,7 +192,8 @@ function WorkDetail() {
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm opacity-60 mb-6">
           <span className="flex-shrink-0">MD5:</span>
-          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all" aria-label={`文件校验码: ${work.md5}`}>{work.md5}</code>
+          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all flex-1" aria-label={`文件校验码: ${work.md5}`}>{work.md5}</code>
+          <CopyButton text={work.md5} label="复制" successLabel="已复制" />
         </div>
 
         {/* 智能下载按钮 */}
@@ -399,6 +409,17 @@ function WorkDetail() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* 图片灯箱 */}
+      {work.screenshots && work.screenshots.length > 0 && (
+        <ImageLightbox
+          images={work.screenshots}
+          initialIndex={lightboxIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          title={work.title}
+        />
       )}
     </article>
   )
