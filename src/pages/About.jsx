@@ -13,27 +13,28 @@ function About() {
   ]
 
   return (
-    <div className="py-12 min-h-[80vh]">
-      <div className="text-center mb-12">
+    <section className="py-12 min-h-[80vh]" aria-labelledby="about-title">
+      <header className="text-center mb-12">
         <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
             ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
             : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
         }`}>
-          👋 关于我
+          <span aria-hidden="true">👋</span>
+          <span className="ml-1">关于我</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+        <h1 id="about-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           了解更多
         </h1>
-      </div>
+      </header>
 
       <div className="max-w-6xl mx-auto">
-        <div className={`flex flex-col md:flex-row gap-12 items-center mb-16 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
+        <section className={`flex flex-col md:flex-row gap-12 items-center mb-16 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`} aria-labelledby="intro-heading">
           <div className="relative">
             <div className="w-56 h-56 rounded-full overflow-hidden border-4 border-gradient-to-r from-primary-500 to-purple-500 shadow-2xl">
               <img 
                 src="https://github.com/abaoa.png" 
-                alt="个人头像" 
+                alt="abaoa 的个人头像"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -41,13 +42,13 @@ function About() {
               theme === 'light'
                 ? 'bg-gradient-to-r from-primary-500 to-purple-500 text-white'
                 : 'bg-gradient-to-r from-primary-600 to-purple-600 text-white'
-            }`}>
+            }`} aria-label="10年以上开发经验">
               10年+ 经验
             </div>
           </div>
           
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-3xl font-bold mb-4">你好，我是 abaoa</h2>
+            <h2 id="intro-heading" className="text-3xl font-bold mb-4">你好，我是 abaoa</h2>
             <p className="text-lg mb-6 leading-relaxed">
               我是一名 Qt/C++ 开发工程师，专注于创建高性能、跨平台的桌面应用程序。
               我热爱学习新技术，不断提升自己的技能水平，追求极致的用户体验。
@@ -57,7 +58,7 @@ function About() {
               同时也具备现代前端开发能力，能够打造精美的用户界面和流畅的交互体验。
             </p>
           </div>
-        </div>
+        </section>
 
         <div className={`p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
           <h3 className="text-2xl font-bold mb-8 text-center">
@@ -156,7 +157,7 @@ function About() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   )
 }
 

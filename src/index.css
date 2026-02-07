@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 响应式根字体大小 - 解决电脑端字体过小问题 */
+html {
+  font-size: 16px;
+}
+
+/* 平板和桌面端增大字体 */
+@media (min-width: 768px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* 大屏显示器 */
+@media (min-width: 1536px) {
+  html {
+    font-size: 19px;
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

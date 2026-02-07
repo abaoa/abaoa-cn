@@ -57,22 +57,27 @@ function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh]">
-      <div className={`p-12 rounded-3xl text-center ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card max-w-4xl mx-4`}>
+      {/* Hero Section */}
+      <section 
+        className={`p-12 rounded-3xl text-center ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card max-w-4xl mx-4`}
+        aria-labelledby="hero-title"
+      >
         <div className="mb-8">
           <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-6 ${
             theme === 'light' 
               ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
               : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
           }`}>
-            ✨ 液态玻璃设计风格
+            <span aria-hidden="true">✨</span>
+            <span className="ml-1">液态玻璃设计风格</span>
           </div>
         </div>
         
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+        <h1 id="hero-title" className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           欢迎来到 abaoa.cn
         </h1>
         
-        <div className="text-xl md:text-2xl text-center max-w-3xl mb-12 leading-relaxed min-h-[4rem]">
+        <div className="text-xl md:text-2xl text-center max-w-3xl mb-12 leading-relaxed min-h-[4rem]" role="status" aria-live="polite" aria-atomic="true">
           <TypeWriter text="我是一名 Qt/C++ 开发工程师，专注于跨平台桌面应用开发。" speed={80} />
         </div>
         
@@ -82,61 +87,75 @@ function Home() {
           </p>
         )}
         
-        <div className={`flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto transition-all duration-500 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <a 
-            href="/works" 
-            className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600"
-          >
-            🎨 查看作品
-          </a>
-          <a 
-            href="/about" 
-            className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600"
-          >
-            💡 了解更多
-          </a>
-        </div>
+        <nav aria-label="主要操作">
+          <div className={`flex flex-col sm:flex-row gap-6 w-full max-w-lg mx-auto transition-all duration-500 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <a 
+              href="/works" 
+              className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              aria-label="查看我的作品集"
+            >
+              <span aria-hidden="true">🎨 </span>
+              查看作品
+            </a>
+            <a 
+              href="/about" 
+              className="glass-button flex-1 text-center px-8 py-4 rounded-full text-lg font-semibold text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              aria-label="了解更多关于我的信息"
+            >
+              <span aria-hidden="true">💡 </span>
+              了解更多
+            </a>
+          </div>
+        </nav>
         
         {/* 统计数据 */}
-        <div className={`mt-12 flex justify-center gap-8 sm:gap-12 transition-all duration-500 delay-200 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="text-center">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary-500 to-purple-500 bg-clip-text text-transparent">
+        <section 
+          className={`mt-12 flex justify-center gap-8 sm:gap-12 transition-all duration-500 delay-200 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+          aria-label="统计数据"
+        >
+          <div className="text-center" role="group" aria-labelledby="stat1-label">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary-500 to-purple-500 bg-clip-text text-transparent" aria-hidden="true">
               <AnimatedCounter end={10} suffix="+" />
             </div>
-            <div className="text-sm mt-1 opacity-70">项目经验</div>
+            <div id="stat1-label" className="text-sm mt-1 opacity-70">项目经验</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <div className="text-center" role="group" aria-labelledby="stat2-label">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent" aria-hidden="true">
               <AnimatedCounter end={5} suffix="+" />
             </div>
-            <div className="text-sm mt-1 opacity-70">年经验</div>
+            <div id="stat2-label" className="text-sm mt-1 opacity-70">年经验</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-pink-500 to-red-500 bg-clip-text text-transparent">
+          <div className="text-center" role="group" aria-labelledby="stat3-label">
+            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-pink-500 to-red-500 bg-clip-text text-transparent" aria-hidden="true">
               <AnimatedCounter end={100} suffix="%" />
             </div>
-            <div className="text-sm mt-1 opacity-70">客户满意</div>
+            <div id="stat3-label" className="text-sm mt-1 opacity-70">客户满意</div>
           </div>
-        </div>
-      </div>
+        </section>
+      </section>
 
       {/* 最近作品预览 */}
-      <div className={`w-full max-w-6xl mx-auto mt-16 px-4 transition-all duration-500 delay-300 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <section 
+        className={`w-full max-w-6xl mx-auto mt-16 px-4 transition-all duration-500 delay-300 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        aria-labelledby="recent-works-title"
+      >
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">最新作品</h2>
+          <h2 id="recent-works-title" className="text-2xl font-bold mb-2">最新作品</h2>
           <p className="opacity-60 text-sm">使用 Qt 框架开发的跨平台应用</p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="list" aria-label="作品列表">
           {works.slice(0, 4).map((work, index) => (
             <Link
               key={work.id}
               to={`/works/${work.id}`}
-              className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl p-5 hover:scale-105 transition-all duration-300 group`}
+              role="listitem"
+              className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl p-5 hover:scale-105 transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
               style={{ animationDelay: `${index * 0.1}s` }}
+              aria-label={`${work.title} - ${work.description}`}
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="iconify text-2xl text-primary-500 group-hover:scale-110 transition-transform" data-icon={work.icon}></span>
+                <span className="iconify text-2xl text-primary-500 group-hover:scale-110 transition-transform" data-icon={work.icon} aria-hidden="true"></span>
                 <h3 className="font-bold text-sm truncate">{work.title}</h3>
               </div>
               <p className={`text-xs mb-3 line-clamp-2 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
@@ -144,10 +163,10 @@ function Home() {
               </p>
               <div className="flex items-center justify-between text-xs opacity-60">
                 <span>v{work.latestVersion}</span>
-                <span className="flex items-center gap-1">
-                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '12px' }}></span>
-                  {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '12px' }}></span>}
-                  {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '12px' }}></span>}
+                <span className="flex items-center gap-1" aria-label={`支持平台: ${work.platforms.join(', ')}`}>
+                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '12px' }} aria-hidden="true"></span>
+                  {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '12px' }} aria-hidden="true"></span>}
+                  {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '12px' }} aria-hidden="true"></span>}
                 </span>
               </div>
             </Link>
@@ -157,16 +176,17 @@ function Home() {
         <div className="text-center mt-8">
           <Link 
             to="/works"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-button text-primary-500 hover:text-primary-600 font-medium transition-all duration-300 hover:gap-3"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full glass-button text-primary-500 hover:text-primary-600 font-medium transition-all duration-300 hover:gap-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            aria-label="查看全部作品"
           >
             查看全部作品
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </Link>
         </div>
-      </div>
+      </section>
     </div>
   )
 }
