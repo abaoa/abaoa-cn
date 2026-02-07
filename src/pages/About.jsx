@@ -1,4 +1,5 @@
 import { useTheme } from '../contexts/ThemeContext'
+import ScrollReveal from '../components/ScrollReveal'
 
 function About() {
   const { theme } = useTheme()
@@ -29,6 +30,7 @@ function About() {
       </header>
 
       <div className="max-w-6xl mx-auto">
+        <ScrollReveal variant="fadeInUp">
         <section className={`flex flex-col md:flex-row gap-12 items-center mb-16 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`} aria-labelledby="intro-heading">
           <div className="relative">
             <div className="w-56 h-56 rounded-full overflow-hidden border-4 border-gradient-to-r from-primary-500 to-purple-500 shadow-2xl">
@@ -47,7 +49,7 @@ function About() {
             </div>
           </div>
           
-          <div className="flex-1 text-center md:text-left">
+          <div className="flex-1 text-left">
             <h2 id="intro-heading" className="text-3xl font-bold mb-4">你好，我是 abaoa</h2>
             <p className="text-lg mb-6 leading-relaxed">
               我是一名 Qt/C++ 开发工程师，专注于创建高性能、跨平台的桌面应用程序。
@@ -59,7 +61,9 @@ function About() {
             </p>
           </div>
         </section>
+        </ScrollReveal>
 
+        <ScrollReveal variant="fadeInUp" delay={0.1}>
         <div className={`p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
           <h3 className="text-2xl font-bold mb-8 text-center">
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -87,8 +91,10 @@ function About() {
             ))}
           </div>
         </div>
+        </ScrollReveal>
 
         {/* 工作经历 */}
+        <ScrollReveal variant="fadeInUp" delay={0.1}>
         <div className={`mt-12 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
           <h3 className="text-2xl font-bold mb-8 text-center">
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -102,7 +108,8 @@ function About() {
               { company: '互联网公司 B', role: 'C++ / Qt 开发工程师', period: '2020 - 2022', desc: '参与公司主要产品的 Qt 客户端开发，优化软件性能和用户交互体验。' },
               { company: '初创公司 C', role: '软件工程师', period: '2019 - 2020', desc: '负责公司产品从零到一的开发，使用 Qt 搭建完整的桌面应用解决方案。' }
             ].map((item, index) => (
-              <div key={index} className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'} hover:bg-opacity-40 transition-all duration-300`}>
+              <ScrollReveal key={index} variant="fadeInLeft" delay={index * 0.1}>
+              <div className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'} hover:bg-opacity-40 transition-all duration-300`}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
                   <h4 className="text-xl font-bold">{item.role}</h4>
                   <span className={`text-sm px-3 py-1 rounded-full ${
@@ -116,11 +123,14 @@ function About() {
                 <div className="text-lg font-semibold mb-2 opacity-70">{item.company}</div>
                 <p className="opacity-80">{item.desc}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
+        </ScrollReveal>
 
         {/* 友情链接 */}
+        <ScrollReveal variant="fadeInUp" delay={0.1}>
         <div className={`mt-12 p-8 rounded-3xl ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card`}>
           <h3 className="text-2xl font-bold mb-8 text-center">
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
@@ -156,6 +166,7 @@ function About() {
             ))}
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </section>
   )
