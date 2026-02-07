@@ -7,43 +7,48 @@ function Works() {
   const navigate = useNavigate()
 
   return (
-    <div className="py-12 min-h-[80vh]">
-      <div className="text-center mb-12">
+    <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
+      <header className="text-center mb-12">
         <div className={`inline-block px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
             ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
             : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
         }`}>
-          💼 Qt 应用程序作品集
+          <span aria-hidden="true">💼</span>
+          <span className="ml-1">Qt 应用程序作品集</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+        <h1 id="works-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           我的作品
         </h1>
         <p className="text-lg opacity-70 max-w-2xl mx-auto">
           使用 Qt 框架开发的跨平台桌面应用程序
         </p>
-      </div>
+      </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" role="list" aria-label="作品列表">
         {works.map((work, index) => (
-          <div 
+          <article
             key={work.id}
             onClick={() => navigate(`/works/${work.id}`)}
-            className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-all duration-300 group`}
+            className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-all duration-300 group focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2`}
             style={{ animationDelay: `${index * 0.1}s` }}
+            role="listitem"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate(`/works/${work.id}`)}
+            aria-label={`${work.title} - ${work.description}`}
           >
             {/* 封面图 */}
             <div className="relative h-40 overflow-hidden">
               <img 
                 src={work.coverImage} 
-                alt={work.title}
+                alt=""
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
               <div className="absolute bottom-3 left-4 right-4">
                 <div className="flex items-center gap-2">
-                  <span className="iconify text-2xl text-white drop-shadow-lg" data-icon={work.icon}></span>
+                  <span className="iconify text-2xl text-white drop-shadow-lg" data-icon={work.icon} aria-hidden="true"></span>
                   <div>
                     <h2 className="text-lg font-bold text-white drop-shadow-lg">{work.title}</h2>
                     <p className="text-xs text-white/80">v{work.latestVersion}</p>
@@ -73,18 +78,18 @@ function Works() {
               </div>
               
               <div className="flex items-center justify-between text-sm opacity-70">
-                <div className="flex items-center gap-2">
-                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }}></span>
-                  {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }}></span>}
-                  {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }}></span>}
+                <div className="flex items-center gap-2" aria-label={`支持平台: ${work.platforms.join(', ')}`}>
+                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+                  {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
+                  {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                 </div>
-                <span className="text-xs">{work.fileSize}</span>
+                <span className="text-xs" aria-label={`文件大小 ${work.fileSize}`}>{work.fileSize}</span>
               </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 

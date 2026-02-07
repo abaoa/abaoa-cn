@@ -71,22 +71,22 @@ function WorkDetail() {
   const isCurrentPlatformSupported = availablePlatforms.includes(userPlatform)
 
   return (
-    <div className="py-8 min-h-[80vh]">
+    <article className="py-8 min-h-[80vh]" aria-labelledby="work-title">
       {/* 返回导航 */}
-      <div className="mb-6">
+      <nav aria-label="面包屑导航" className="mb-6">
         <Link 
           to="/works"
-          className={`inline-flex items-center gap-2 text-sm font-medium transition-colors ${
+          className={`inline-flex items-center gap-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg px-2 py-1 ${
             theme === 'light' ? 'text-gray-600 hover:text-primary-600' : 'text-gray-400 hover:text-primary-400'
           }`}
         >
-          <span className="iconify" data-icon="simple-icons:arrow-left" style={{ fontSize: '16px' }}></span>
+          <span className="iconify" data-icon="simple-icons:arrow-left" style={{ fontSize: '16px' }} aria-hidden="true"></span>
           返回作品列表
         </Link>
-      </div>
+      </nav>
 
       {/* 作品封面大图 */}
-      <div className="relative h-48 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-8 group">
+      <header className="relative h-48 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-8 group">
         <img 
           src={work.coverImage} 
           alt={work.title}
@@ -94,14 +94,14 @@ function WorkDetail() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <div className={`p-3 rounded-2xl ${theme === 'light' ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-md`}>
-              <span className="iconify text-4xl sm:text-5xl text-white" data-icon={work.icon}></span>
+              <span className="iconify text-4xl sm:text-5xl text-white" data-icon={work.icon} aria-hidden="true"></span>
             </div>
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-2">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{work.title}</h1>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30">
+                <h1 id="work-title" className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{work.title}</h1>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30" aria-label={`版本 ${work.latestVersion}`}>
                   v{work.latestVersion}
                 </span>
               </div>
@@ -111,21 +111,25 @@ function WorkDetail() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* 截图画廊 */}
       {work.screenshots && work.screenshots.length > 0 && (
-        <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-6 sm:p-8 mb-8`}>
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
-            <span className="iconify text-primary-500" data-icon="simple-icons:image" style={{ fontSize: '24px' }}></span>
+        <section 
+          className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-6 sm:p-8 mb-8`}
+          aria-labelledby="screenshots-title"
+        >
+          <h2 id="screenshots-title" className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="iconify text-primary-500" data-icon="simple-icons:image" style={{ fontSize: '24px' }} aria-hidden="true"></span>
             应用截图
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" role="list" aria-label="应用截图列表">
             {work.screenshots.map((screenshot, index) => (
-              <div 
-                key={index} 
-                className="relative rounded-2xl overflow-hidden group cursor-pointer"
+              <button
+                key={index}
+                className="relative rounded-2xl overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 onClick={() => window.open(screenshot, '_blank')}
+                aria-label={`在新窗口打开${work.title}截图 ${index + 1}`}
               >
                 <img 
                   src={screenshot} 
@@ -133,67 +137,71 @@ function WorkDetail() {
                   className="w-full h-auto transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 group-focus:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                   </svg>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* 下载区域 */}
-      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <span className="iconify text-primary-500" data-icon="simple-icons:download" style={{ fontSize: '24px' }}></span>
+      <section 
+        className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}
+        aria-labelledby="download-title"
+      >
+        <h2 id="download-title" className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="iconify text-primary-500" data-icon="simple-icons:download" style={{ fontSize: '24px' }} aria-hidden="true"></span>
           下载
         </h2>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div>
-            <p className="text-sm opacity-60 mb-1">最新版本</p>
-            <p className="text-lg sm:text-xl font-semibold">{work.latestVersion}</p>
+            <dt className="text-sm opacity-60 mb-1">最新版本</dt>
+            <dd className="text-lg sm:text-xl font-semibold">{work.latestVersion}</dd>
           </div>
           <div>
-            <p className="text-sm opacity-60 mb-1">发布日期</p>
-            <p className="text-lg sm:text-xl font-semibold">{work.releaseDate}</p>
+            <dt className="text-sm opacity-60 mb-1">发布日期</dt>
+            <dd className="text-lg sm:text-xl font-semibold">{work.releaseDate}</dd>
           </div>
           <div>
-            <p className="text-sm opacity-60 mb-1">文件大小</p>
-            <p className="text-lg sm:text-xl font-semibold">{work.fileSize}</p>
+            <dt className="text-sm opacity-60 mb-1">文件大小</dt>
+            <dd className="text-lg sm:text-xl font-semibold">{work.fileSize}</dd>
           </div>
           <div>
-            <p className="text-sm opacity-60 mb-1">支持平台</p>
-            <div className="flex flex-wrap gap-2 mt-1">
+            <dt className="text-sm opacity-60 mb-1">支持平台</dt>
+            <dd className="flex flex-wrap gap-2 mt-1">
               {work.platforms.map(p => (
                 <span key={p} className="text-xs sm:text-sm px-2 py-1 rounded bg-primary-500/20 whitespace-nowrap">{p}</span>
               ))}
-            </div>
+            </dd>
           </div>
-        </div>
+        </dl>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm opacity-60 mb-6">
           <span className="flex-shrink-0">MD5:</span>
-          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all">{work.md5}</code>
+          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all" aria-label={`文件校验码: ${work.md5}`}>{work.md5}</code>
         </div>
 
         {/* 智能下载按钮 */}
         {isCurrentPlatformSupported ? (
           <div className="space-y-4">
-            <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-green-500/10' : 'bg-green-500/20'} border border-green-500/30`}>
+            <div className={`p-4 rounded-2xl ${theme === 'light' ? 'bg-green-500/10' : 'bg-green-500/20'} border border-green-500/30`} role="status" aria-live="polite">
               <div className="flex items-start gap-2 text-green-600 dark:text-green-400 text-sm mb-3">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span className="break-words">检测到您的系统是 {getPlatformName(userPlatform)}，已为您推荐适合的版本</span>
               </div>
               <a 
                 href={downloads[userPlatform].url}
-                className="flex items-center justify-center gap-2 sm:gap-3 w-full py-3 sm:py-4 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-base sm:text-lg hover:opacity-90 transition-opacity"
+                className="flex items-center justify-center gap-2 sm:gap-3 w-full py-3 sm:py-4 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-base sm:text-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                aria-label={`下载 ${getPlatformName(userPlatform)} 版本，文件大小 ${downloads[userPlatform].size}`}
               >
-                <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }}></span>
+                <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }} aria-hidden="true"></span>
                 <span className="truncate">下载 {getPlatformName(userPlatform)} 版本</span>
                 <span className="text-sm sm:text-base font-normal opacity-80 flex-shrink-0">({downloads[userPlatform].size})</span>
               </a>
@@ -266,7 +274,7 @@ function WorkDetail() {
             <p className="text-sm opacity-50 mt-1">请稍后查看或联系开发者</p>
           </div>
         )}
-      </div>
+      </section>
 
       {/* 功能特性 */}
       <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
@@ -392,7 +400,7 @@ function WorkDetail() {
           </div>
         </div>
       )}
-    </div>
+    </article>
   )
 }
 
