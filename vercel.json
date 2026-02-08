@@ -9,8 +9,8 @@
       "destination": "/assets/$1"
     },
     {
-      "source": "/vite.svg",
-      "destination": "/vite.svg"
+      "source": "/works/(.*)",
+      "destination": "/works/$1"
     },
     {
       "source": "/(.*)",
