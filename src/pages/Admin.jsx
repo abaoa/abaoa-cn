@@ -38,6 +38,7 @@ function Admin() {
   const [editingWork, setEditingWork] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
   const [message, setMessage] = useState('')
+  const [activeVersionIndex, setActiveVersionIndex] = useState(0)
 
   // 加载作品列表
   useEffect(() => {
@@ -106,22 +107,87 @@ function Admin() {
     }))
   }
 
-  // 更新版本信息
-  const updateVersion = (field, value) => {
+
+
+  // 删除下载平台
+  const removeDownloadPlatform = (platform) => {
+    setEditingWork(prev => {
+      const newDownloads = { ...prev.versions[activeVersionIndex].downloads }
+      delete newDownloads[platform]
+      return {
+        ...prev,
+        versions: prev.versions.map((v, i) => 
+          i === activeVersionIndex ? { ...v, downloads: newDownloads } : v
+        )
+      }
+    })
+  }
+
+  // 添加新版本
+  const addVersion = () => {
+    const newVersion = {
+      version: '',
+      date: new Date().toISOString().split('T')[0],
+      changes: [''],
+      isLatest: false,
+      downloads: {},
+      screenshots: ['']
+    }
+    setEditingWork(prev => ({
+      ...prev,
+      versions: [newVersion, ...prev.versions]
+    }))
+    setActiveVersionIndex(0)
+  }
+
+  // 删除版本
+  const removeVersion = (index) => {
+    if (editingWork.versions.length <= 1) {
+      setMessage('❌ 至少需要保留一个版本')
+      return
+    }
+    setEditingWork(prev => {
+      const newVersions = prev.versions.filter((_, i) => i !== index)
+      // 确保至少有一个最新版本
+      const hasLatest = newVersions.some(v => v.isLatest)
+      if (!hasLatest && newVersions.length > 0) {
+        newVersions[0].isLatest = true
+      }
+      return { ...prev, versions: newVersions }
+    })
+    if (activeVersionIndex >= index && activeVersionIndex > 0) {
+      setActiveVersionIndex(activeVersionIndex - 1)
+    }
+  }
+
+  // 设置最新版本
+  const setLatestVersion = (index) => {
+    setEditingWork(prev => ({
+      ...prev,
+      latestVersion: prev.versions[index].version,
+      versions: prev.versions.map((v, i) => ({
+        ...v,
+        isLatest: i === index
+      }))
+    }))
+  }
+
+  // 更新指定版本的字段
+  const updateVersionField = (field, value) => {
     setEditingWork(prev => ({
       ...prev,
       versions: prev.versions.map((v, i) => 
-        i === 0 ? { ...v, [field]: value } : v
+        i === activeVersionIndex ? { ...v, [field]: value } : v
       )
     }))
   }
 
-  // 更新下载信息
-  const updateDownload = (platform, field, value) => {
+  // 更新指定版本的下载信息
+  const updateVersionDownload = (platform, field, value) => {
     setEditingWork(prev => ({
       ...prev,
       versions: prev.versions.map((v, i) => 
-        i === 0 ? {
+        i === activeVersionIndex ? {
           ...v,
           downloads: {
             ...v.downloads,
@@ -132,12 +198,12 @@ function Admin() {
     }))
   }
 
-  // 添加下载平台
-  const addDownloadPlatform = (platform) => {
+  // 添加下载平台到指定版本
+  const addVersionDownloadPlatform = (platform) => {
     setEditingWork(prev => ({
       ...prev,
       versions: prev.versions.map((v, i) => 
-        i === 0 ? {
+        i === activeVersionIndex ? {
           ...v,
           downloads: {
             ...v.downloads,
@@ -146,20 +212,6 @@ function Admin() {
         } : v
       )
     }))
-  }
-
-  // 删除下载平台
-  const removeDownloadPlatform = (platform) => {
-    setEditingWork(prev => {
-      const newDownloads = { ...prev.versions[0].downloads }
-      delete newDownloads[platform]
-      return {
-        ...prev,
-        versions: prev.versions.map((v, i) => 
-          i === 0 ? { ...v, downloads: newDownloads } : v
-        )
-      }
-    })
   }
 
   // 导出 JSON
@@ -489,119 +541,208 @@ function Admin() {
 
         {/* 版本信息 */}
         <section className={`p-6 rounded-2xl ${theme === 'light' ? 'glass-light' : 'glass-dark'}`}>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <span className="iconify text-primary-500" data-icon="lucide:package"></span>
-            最新版本
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">版本号</label>
-              <input
-                type="text"
-                value={editingWork.latestVersion}
-                onChange={e => {
-                  updateField('latestVersion', e.target.value)
-                  updateVersion('version', e.target.value)
-                }}
-                placeholder="1.0.0"
-                className={`w-full px-4 py-2 rounded-xl border ${
-                  theme === 'light' 
-                    ? 'border-gray-200 bg-white' 
-                    : 'border-white/10 bg-white/5'
-                }`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">发布日期</label>
-              <input
-                type="date"
-                value={editingWork.versions[0].date}
-                onChange={e => updateVersion('date', e.target.value)}
-                className={`w-full px-4 py-2 rounded-xl border ${
-                  theme === 'light' 
-                    ? 'border-gray-200 bg-white' 
-                    : 'border-white/10 bg-white/5'
-                }`}
-              />
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <span className="iconify text-primary-500" data-icon="lucide:package"></span>
+              版本管理 ({editingWork.versions.length} 个版本)
+            </h2>
+            <button
+              onClick={addVersion}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                theme === 'light' 
+                  ? 'bg-primary-100 text-primary-700 hover:bg-primary-200' 
+                  : 'bg-primary-500/20 text-primary-400 hover:bg-primary-500/30'
+              }`}
+            >
+              + 添加新版本
+            </button>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">更新内容</label>
-            <div className="space-y-2">
-              {editingWork.versions[0].changes.map((change, i) => (
-                <div key={i} className="flex gap-2">
+          {/* 版本切换标签 */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {editingWork.versions.map((version, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveVersionIndex(index)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  activeVersionIndex === index
+                    ? theme === 'light'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-primary-500/80 text-white'
+                    : theme === 'light'
+                      ? 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                v{version.version || '未命名'}
+                {version.isLatest && (
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-500 text-white">
+                    最新
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* 当前版本编辑 */}
+          {editingWork.versions[activeVersionIndex] && (
+            <div className={`p-6 rounded-xl ${
+              theme === 'light' ? 'bg-gray-50' : 'bg-white/5'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">编辑版本 v{editingWork.versions[activeVersionIndex].version || '未命名'}</h3>
+                <div className="flex items-center gap-2">
+                  {!editingWork.versions[activeVersionIndex].isLatest && (
+                    <button
+                      onClick={() => setLatestVersion(activeVersionIndex)}
+                      className={`px-3 py-1.5 rounded-lg text-sm ${
+                        theme === 'light'
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                      }`}
+                    >
+                      设为最新
+                    </button>
+                  )}
+                  <button
+                    onClick={() => removeVersion(activeVersionIndex)}
+                    className={`px-3 py-1.5 rounded-lg text-sm ${
+                      theme === 'light'
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                    }`}
+                  >
+                    删除版本
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">版本号</label>
                   <input
                     type="text"
-                    value={change}
+                    value={editingWork.versions[activeVersionIndex].version}
                     onChange={e => {
-                      const newChanges = [...editingWork.versions[0].changes]
-                      newChanges[i] = e.target.value
-                      updateVersion('changes', newChanges)
+                      updateVersionField('version', e.target.value)
+                      if (editingWork.versions[activeVersionIndex].isLatest) {
+                        updateField('latestVersion', e.target.value)
+                      }
                     }}
-                    placeholder={`更新内容 ${i + 1}`}
-                    className={`flex-1 px-4 py-2 rounded-xl border ${
+                    placeholder="1.0.0"
+                    className={`w-full px-4 py-2 rounded-xl border ${
                       theme === 'light' 
                         ? 'border-gray-200 bg-white' 
                         : 'border-white/10 bg-white/5'
                     }`}
                   />
-                  <button
-                    onClick={() => {
-                      const newChanges = editingWork.versions[0].changes.filter((_, idx) => idx !== i)
-                      updateVersion('changes', newChanges)
-                    }}
-                    className={`px-3 py-2 rounded-xl ${
-                      theme === 'light' ? 'bg-red-100 text-red-600' : 'bg-red-500/20 text-red-400'
-                    }`}
-                  >
-                    删除
-                  </button>
                 </div>
-              ))}
-            </div>
-            <button
-              onClick={() => updateVersion('changes', [...editingWork.versions[0].changes, ''])}
-              className={`mt-3 text-sm px-4 py-2 rounded-lg ${
-                theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'
-              }`}
-            >
-              + 添加更新内容
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">下载信息</label>
-            <div className="space-y-4">
-              {Object.entries(editingWork.versions[0].downloads).map(([platform, info]) => (
-                <div key={platform} className={`p-4 rounded-xl ${
-                  theme === 'light' ? 'bg-gray-50' : 'bg-white/5'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium capitalize">{platform}</span>
-                    <button
-                      onClick={() => removeDownloadPlatform(platform)}
-                      className="text-sm text-red-500"
-                    >
-                      删除平台
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-2">发布日期</label>
+                  <input
+                    type="date"
+                    value={editingWork.versions[activeVersionIndex].date}
+                    onChange={e => updateVersionField('date', e.target.value)}
+                    className={`w-full px-4 py-2 rounded-xl border ${
+                      theme === 'light' 
+                        ? 'border-gray-200 bg-white' 
+                        : 'border-white/10 bg-white/5'
+                    }`}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
-                      type="text"
-                      value={info.url}
-                      onChange={e => updateDownload(platform, 'url', e.target.value)}
-                      placeholder="下载链接"
-                      className={`px-3 py-2 rounded-lg border text-sm ${
-                        theme === 'light' 
-                          ? 'border-gray-200 bg-white' 
-                          : 'border-white/10 bg-white/5'
-                      }`}
+                      type="checkbox"
+                      checked={editingWork.versions[activeVersionIndex].isLatest}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setLatestVersion(activeVersionIndex)
+                        }
+                      }}
+                      className="w-5 h-5 rounded"
+                    />
+                    <span className="text-sm">标记为最新版本</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">更新内容</label>
+                <div className="space-y-2">
+                  {editingWork.versions[activeVersionIndex].changes.map((change, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={change}
+                        onChange={e => {
+                          const newChanges = [...editingWork.versions[activeVersionIndex].changes]
+                          newChanges[i] = e.target.value
+                          updateVersionField('changes', newChanges)
+                        }}
+                        placeholder={`更新内容 ${i + 1}`}
+                        className={`flex-1 px-4 py-2 rounded-xl border ${
+                          theme === 'light' 
+                            ? 'border-gray-200 bg-white' 
+                            : 'border-white/10 bg-white/5'
+                        }`}
+                      />
+                      <button
+                        onClick={() => {
+                          const newChanges = editingWork.versions[activeVersionIndex].changes.filter((_, idx) => idx !== i)
+                          updateVersionField('changes', newChanges)
+                        }}
+                        className={`px-3 py-2 rounded-xl ${
+                          theme === 'light' ? 'bg-red-100 text-red-600' : 'bg-red-500/20 text-red-400'
+                        }`}
+                      >
+                        删除
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => updateVersionField('changes', [...editingWork.versions[activeVersionIndex].changes, ''])}
+                  className={`mt-3 text-sm px-4 py-2 rounded-lg ${
+                    theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                >
+                  + 添加更新内容
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">下载信息</label>
+                <div className="space-y-4">
+                  {Object.entries(editingWork.versions[activeVersionIndex].downloads).map(([platform, info]) => (
+                    <div key={platform} className={`p-4 rounded-xl ${
+                      theme === 'light' ? 'bg-white' : 'bg-white/5'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium capitalize">{platform}</span>
+                        <button
+                          onClick={() => removeDownloadPlatform(platform)}
+                          className="text-sm text-red-500"
+                        >
+                          删除平台
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={info.url}
+                          onChange={e => updateVersionDownload(platform, 'url', e.target.value)}
+                          placeholder="下载链接"
+                          className={`px-3 py-2 rounded-lg border text-sm ${
+                            theme === 'light' 
+                              ? 'border-gray-200 bg-white' 
+                              : 'border-white/10 bg-white/5'
+                          }`}
                     />
                     <input
                       type="text"
                       value={info.filename}
-                      onChange={e => updateDownload(platform, 'filename', e.target.value)}
+                      onChange={e => updateVersionDownload(platform, 'filename', e.target.value)}
                       placeholder="文件名"
                       className={`px-3 py-2 rounded-lg border text-sm ${
                         theme === 'light' 
@@ -612,7 +753,7 @@ function Admin() {
                     <input
                       type="text"
                       value={info.size}
-                      onChange={e => updateDownload(platform, 'size', e.target.value)}
+                      onChange={e => updateVersionDownload(platform, 'size', e.target.value)}
                       placeholder="文件大小 (如: 25.0 MB)"
                       className={`px-3 py-2 rounded-lg border text-sm ${
                         theme === 'light' 
@@ -623,7 +764,7 @@ function Admin() {
                     <input
                       type="text"
                       value={info.md5}
-                      onChange={e => updateDownload(platform, 'md5', e.target.value)}
+                      onChange={e => updateVersionDownload(platform, 'md5', e.target.value)}
                       placeholder="MD5 值"
                       className={`px-3 py-2 rounded-lg border text-sm ${
                         theme === 'light' 
@@ -639,7 +780,7 @@ function Admin() {
               {['windows', 'linux', 'macos'].filter(p => !editingWork.versions[0].downloads[p]).map(platform => (
                 <button
                   key={platform}
-                  onClick={() => addDownloadPlatform(platform)}
+                  onClick={() => addVersionDownloadPlatform(platform)}
                   className={`text-sm px-3 py-2 rounded-lg ${
                     theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'
                   }`}
@@ -658,15 +799,15 @@ function Admin() {
             截图路径
           </h2>
           <div className="space-y-2">
-            {editingWork.versions[0].screenshots.map((screenshot, i) => (
+            {editingWork.versions[activeVersionIndex].screenshots.map((screenshot, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   type="text"
                   value={screenshot}
                   onChange={e => {
-                    const newScreenshots = [...editingWork.versions[0].screenshots]
+                    const newScreenshots = [...editingWork.versions[activeVersionIndex].screenshots]
                     newScreenshots[i] = e.target.value
-                    updateVersion('screenshots', newScreenshots)
+                    updateVersionField('screenshots', newScreenshots)
                   }}
                   placeholder="/works/myapp/screenshots/1.jpg"
                   className={`flex-1 px-4 py-2 rounded-xl border ${
@@ -677,8 +818,8 @@ function Admin() {
                 />
                 <button
                   onClick={() => {
-                    const newScreenshots = editingWork.versions[0].screenshots.filter((_, idx) => idx !== i)
-                    updateVersion('screenshots', newScreenshots)
+                    const newScreenshots = editingWork.versions[activeVersionIndex].screenshots.filter((_, idx) => idx !== i)
+                    updateVersionField('screenshots', newScreenshots)
                   }}
                   className={`px-3 py-2 rounded-xl ${
                     theme === 'light' ? 'bg-red-100 text-red-600' : 'bg-red-500/20 text-red-400'
@@ -690,7 +831,7 @@ function Admin() {
             ))}
           </div>
           <button
-            onClick={() => updateVersion('screenshots', [...editingWork.versions[0].screenshots, ''])}
+            onClick={() => updateVersionField('screenshots', [...editingWork.versions[activeVersionIndex].screenshots, ''])}
             className={`mt-3 text-sm px-4 py-2 rounded-lg ${
               theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'
             }`}
