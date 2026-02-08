@@ -1,0 +1,42 @@
+{
+  "id": 5,
+  "slug": "your-app-slug",
+  "title": "你的应用名称",
+  "description": "简短的应用描述，一句话概括核心功能。",
+  "icon": "simple-icons:qt",
+  "tags": ["Qt6", "C++", "工具"],
+  "platforms": ["Windows", "Linux", "macOS"],
+  "latestVersion": "1.0.0",
+  "features": [
+    "核心功能1",
+    "核心功能2",
+    "核心功能3"
+  ],
+  "systemRequirements": {
+    "windows": "Windows 10 64位",
+    "linux": "Ubuntu 20.04+",
+    "macos": "macOS 11.0+"
+  },
+  "versions": [
+    {
+      "version": "1.0.0",
+      "date": "2025-02-08",
+      "changes": [
+        "初始版本发布",
+        "核心功能实现"
+      ],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "https://example.com/download",
+          "filename": "YourApp-v1.0.0-Windows.exe",
+          "size": "25.0 MB",
+          "md5": "1234567890abcdef1234567890abcdef"
+        }
+      },
+      "screenshots": [
+        "/works/your-app-slug/versions/1.0.0/screenshots/1.jpg"
+      ]
+    }
+  ]
+}
