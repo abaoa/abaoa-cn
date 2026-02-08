@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import MobileNav from './MobileNav'
 import ScrollToTop from './ScrollToTop'
 
 function Layout() {
@@ -16,7 +17,7 @@ function Layout() {
       const timeout = setTimeout(() => {
         setDisplayLocation(location)
         setTransitionStage('fadeIn')
-      }, 150)
+      }, 300)
 
       return () => clearTimeout(timeout)
     }
@@ -36,10 +37,10 @@ function Layout() {
       <Navbar />
       <main 
         id="main-content" 
-        className={`container mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-grow transition-all duration-150 ${
+        className={`container mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-grow transition-all duration-300 pb-24 sm:pb-6 ${
           transitionStage === 'fadeIn' 
             ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 translate-y-2'
+            : 'opacity-0 translate-y-4'
         }`} 
         role="main" 
         aria-label="主要内容"
@@ -47,6 +48,7 @@ function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <MobileNav />
     </div>
   )
 }

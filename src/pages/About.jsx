@@ -1,4 +1,5 @@
 import { useTheme } from '../contexts/ThemeContext'
+import SEO from '../components/SEO'
 import ScrollReveal from '../components/ScrollReveal'
 
 function About() {
@@ -14,7 +15,13 @@ function About() {
   ]
 
   return (
-    <section className="py-12 min-h-[80vh]" aria-labelledby="about-title">
+    <>
+      <SEO 
+        title="关于"
+        description="了解阿宝啊的技术背景、开发经验和技能栈。专注于 Qt/C++ 跨平台桌面应用开发。"
+        keywords="关于阿宝啊, 开发者介绍, Qt经验, C++技能"
+      />
+      <section className="py-12 min-h-[80vh]" aria-labelledby="about-title">
       <header className="text-center mb-12">
         <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
@@ -165,6 +172,7 @@ function About() {
         </ScrollReveal>
       </div>
     </section>
+    </>
   )
 }
 
