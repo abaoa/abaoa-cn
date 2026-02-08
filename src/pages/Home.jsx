@@ -1,7 +1,6 @@
 import { useTheme } from '../contexts/ThemeContext'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import AnimatedCounter from '../components/AnimatedCounter'
 
 function TypeWriter({ text, speed = 100, onComplete }) {
   const [displayText, setDisplayText] = useState('')
@@ -120,31 +119,6 @@ function Home() {
             </a>
           </div>
         </nav>
-        
-        {/* 统计数据 */}
-        <section 
-          className={`mt-12 flex justify-center gap-8 sm:gap-12 transition-all duration-500 delay-200 ${showSubtitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          aria-label="统计数据"
-        >
-          <div className="text-center" role="group" aria-labelledby="stat1-label">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary-500 to-purple-500 bg-clip-text text-transparent" aria-hidden="true">
-              <AnimatedCounter end={10} suffix="+" />
-            </div>
-            <div id="stat1-label" className="text-sm mt-1 opacity-70">项目经验</div>
-          </div>
-          <div className="text-center" role="group" aria-labelledby="stat2-label">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent" aria-hidden="true">
-              <AnimatedCounter end={5} suffix="+" />
-            </div>
-            <div id="stat2-label" className="text-sm mt-1 opacity-70">年经验</div>
-          </div>
-          <div className="text-center" role="group" aria-labelledby="stat3-label">
-            <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-pink-500 to-red-500 bg-clip-text text-transparent" aria-hidden="true">
-              <AnimatedCounter end={100} suffix="%" />
-            </div>
-            <div id="stat3-label" className="text-sm mt-1 opacity-70">客户满意</div>
-          </div>
-        </section>
       </section>
 
       {/* 最近作品预览 */}
@@ -161,7 +135,7 @@ function Home() {
           {works.slice(0, 4).map((work, index) => (
             <Link
               key={work.id}
-              to={`/works/${work.id}/version/${work.latestVersion}`}
+              to={`/works/${work.slug}/version/${work.latestVersion}`}
               role="listitem"
               className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl p-5 hover:scale-105 transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
               style={{ animationDelay: `${index * 0.1}s` }}
@@ -177,7 +151,7 @@ function Home() {
               <div className="flex items-center justify-between text-xs opacity-60">
                 <span>v{work.latestVersion}</span>
                 <span className="flex items-center gap-1" aria-label={`支持平台: ${work.platforms.join(', ')}`}>
-                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '12px' }} aria-hidden="true"></span>
+                  {work.platforms.includes('Windows') && <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '12px' }} aria-hidden="true"></span>}
                   {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '12px' }} aria-hidden="true"></span>}
                   {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '12px' }} aria-hidden="true"></span>}
                 </span>
