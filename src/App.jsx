@@ -28,12 +28,12 @@ function App() {
                 <Works />
               </Suspense>
             } />
-            <Route path="works/:id" element={
+            <Route path="works/:slug" element={
               <Suspense fallback={<PageLoader />}>
                 <WorkDetail />
               </Suspense>
             } />
-            <Route path="works/:id/version/:version" element={
+            <Route path="works/:slug/version/:version" element={
               <Suspense fallback={<PageLoader />}>
                 <WorkDetail />
               </Suspense>

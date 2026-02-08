@@ -36,43 +36,26 @@ function getPlatformIcon(platform) {
 
 function WorkDetail() {
   const { theme } = useTheme()
-  const { id, version: versionParam } = useParams()
+  const { slug, version: versionParam } = useParams()
   const navigate = useNavigate()
   const [userPlatform, setUserPlatform] = useState('unknown')
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [work, setWork] = useState(null)
-  const [rawWork, setRawWork] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [workSlug, setWorkSlug] = useState(null)
 
-  // 首先获取作品slug
-  useEffect(() => {
-    async function loadWorkSlug() {
-      try {
-        const response = await fetch('/works/manifest.json')
-        const manifest = await response.json()
-        const found = manifest.works.find(w => w.id === parseInt(id))
-        if (found) {
-          setWorkSlug(found.slug)
-        }
-      } catch (error) {
-        console.error('Failed to load work slug:', error)
-      }
-    }
-    loadWorkSlug()
-  }, [id])
-
-  // 然后加载作品详细信息
+  // 加载作品详细信息
   useEffect(() => {
     async function loadWork() {
-      if (!workSlug) return
+      if (!slug) return
       
       try {
         setLoading(true)
-        const response = await fetch(`/works/${workSlug}/info.json`)
+        const response = await fetch(`/works/${slug}/info.json`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const workInfo = await response.json()
-        setRawWork(workInfo)
         
         // 转换为兼容格式
         const latestVersion = workInfo.versions?.find(v => v.isLatest) || workInfo.versions?.[0]
@@ -117,7 +100,7 @@ function WorkDetail() {
     }
     
     loadWork()
-  }, [workSlug])
+  }, [slug])
 
   // 检查是否是特定版本页面
   const isVersionPage = !!versionParam
@@ -131,14 +114,14 @@ function WorkDetail() {
   }
 
   const navigateToVersion = (version) => {
-    navigate(`/works/${id}/version/${version}`)
+    navigate(`/works/${slug}/version/${version}`)
   }
 
   useEffect(() => {
     setUserPlatform(detectPlatform())
     // 滚动到页面顶部
     window.scrollTo(0, 0)
-  }, [id, versionParam])
+  }, [slug, versionParam])
 
   if (loading) {
     return <PageLoader />
@@ -198,7 +181,7 @@ function WorkDetail() {
   const isCurrentPlatformSupported = availablePlatforms.includes(userPlatform)
 
   // 版本页面的返回链接
-  const backLink = isVersionPage ? `/works/${id}` : '/works'
+  const backLink = isVersionPage ? `/works/${slug}` : '/works'
   const backText = isVersionPage ? '返回作品主页' : '返回作品列表'
 
   return (
@@ -288,13 +271,13 @@ function WorkDetail() {
             版本更新内容
           </h2>
           <div className={`p-6 rounded-2xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {versionData.changes.map((change, index) => (
-                <li key={index} className="flex items-start gap-3">
+                <li key={index} className="flex items-center gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">
                     {index + 1}
                   </span>
-                  <span className="text-base leading-relaxed pt-0.5">{change}</span>
+                  <span className="text-base leading-relaxed">{change}</span>
                 </li>
               ))}
             </ul>
@@ -319,7 +302,7 @@ function WorkDetail() {
               {isVersionPage && versionData ? versionData.version : work.latestVersion}
               {isVersionPage && versionData?.version === work.latestVersion && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 text-white font-medium">
-                  最新
+                  最新版
                 </span>
               )}
             </dd>
@@ -366,34 +349,47 @@ function WorkDetail() {
               </div>
               <a 
                 href={downloads[userPlatform].url}
-                className="flex items-center justify-center gap-2 sm:gap-3 w-full py-3 sm:py-4 px-4 rounded-xl bg-gradient-to-r from-primary-500 to-purple-500 text-white font-bold text-base sm:text-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className={`flex flex-col items-center justify-center gap-1 w-full py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
+                  theme === 'light'
+                    ? 'bg-white/80 hover:bg-white text-gray-800'
+                    : 'bg-white/20 hover:bg-white/30 text-gray-100'
+                }`}
                 aria-label={`下载 ${getPlatformName(userPlatform)} 版本，文件大小 ${downloads[userPlatform].size}`}
               >
-                <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }} aria-hidden="true"></span>
-                <span className="truncate">下载 {getPlatformName(userPlatform)} 版本</span>
-                <span className="text-sm sm:text-base font-normal opacity-80 flex-shrink-0">({downloads[userPlatform].size})</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }} aria-hidden="true"></span>
+                  <span className="truncate">下载 {getPlatformName(userPlatform)} 版本</span>
+                  <span className="text-sm font-normal opacity-60 flex-shrink-0">({downloads[userPlatform].size})</span>
+                </div>
+                <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                  系统要求：{work.systemRequirements?.[userPlatform] || '无特殊要求'}
+                </span>
               </a>
             </div>
             
             {availablePlatforms.length > 1 && (
               <div className="pt-2">
-                <p className="text-sm opacity-60 mb-3">其他平台版本：</p>
-                <div className="flex flex-wrap gap-3">
-                  {availablePlatforms
-                    .filter(p => p !== userPlatform)
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {['windows', 'linux', 'macos']
+                    .filter(p => p !== userPlatform && availablePlatforms.includes(p))
                     .map(platform => (
                     <a
                       key={platform}
                       href={downloads[platform].url}
-                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
+                      className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-3 sm:py-4 rounded-xl text-sm font-medium transition-colors ${
                         theme === 'light'
-                          ? 'bg-white/50 hover:bg-white/70 text-gray-700'
-                          : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                          ? 'bg-white/60 hover:bg-white/80 text-gray-700'
+                          : 'bg-white/10 hover:bg-white/20 text-gray-200'
                       }`}
                     >
-                      <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '18px' }}></span>
-                      <span className="hidden sm:inline">{getPlatformName(platform)}</span>
-                      <span className="sm:hidden">{getPlatformName(platform).slice(0, 3)}</span>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '20px' }}></span>
+                        <span className="truncate">下载 {getPlatformName(platform)} 版本</span>
+                        <span className="text-xs sm:text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
+                      </div>
+                      <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                        系统要求：{work.systemRequirements?.[platform] || '无特殊要求'}
+                      </span>
                     </a>
                     ))}
                 </div>
@@ -419,19 +415,26 @@ function WorkDetail() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {availablePlatforms.map(platform => (
+              {['windows', 'linux', 'macos']
+                .filter(p => availablePlatforms.includes(p))
+                .map(platform => (
                 <a
                   key={platform}
                   href={downloads[platform].url}
-                  className={`flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
+                  className={`flex flex-col items-center justify-center gap-1 py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
                     theme === 'light'
                       ? 'bg-white/60 hover:bg-white/80 text-gray-800'
                       : 'bg-white/10 hover:bg-white/20 text-gray-200'
                   }`}
                 >
-                  <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
-                  <span className="truncate">{getPlatformName(platform)}</span>
-                  <span className="text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
+                    <span className="truncate">下载 {getPlatformName(platform)} 版本</span>
+                    <span className="text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
+                  </div>
+                  <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                    系统要求：{work.systemRequirements?.[platform] || '无特殊要求'}
+                  </span>
                 </a>
               ))}
             </div>
@@ -458,47 +461,10 @@ function WorkDetail() {
                 theme === 'light' ? 'bg-white/30' : 'bg-white/5'
               }`}
             >
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm">✓</span>
-              <span>{feature}</span>
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">✓</span>
+              <span className="leading-relaxed">{feature}</span>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* 系统要求 */}
-      <div className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-3xl p-8 mb-8`}>
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <span className="iconify text-primary-500" data-icon="simple-icons:computer" style={{ fontSize: '24px' }}></span>
-          系统要求
-        </h2>
-        <div className="space-y-4">
-          {work.systemRequirements.windows && (
-            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
-              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:windows"></span>
-              <div>
-                <p className="font-medium">Windows</p>
-                <p className="text-sm opacity-70">{work.systemRequirements.windows}</p>
-              </div>
-            </div>
-          )}
-          {work.systemRequirements.linux && (
-            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
-              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:linux"></span>
-              <div>
-                <p className="font-medium">Linux</p>
-                <p className="text-sm opacity-70">{work.systemRequirements.linux}</p>
-              </div>
-            </div>
-          )}
-          {work.systemRequirements.macos && (
-            <div className={`flex items-center gap-4 p-4 rounded-xl ${theme === 'light' ? 'bg-white/30' : 'bg-white/5'}`}>
-              <span className="iconify text-2xl text-primary-500" data-icon="simple-icons:apple"></span>
-              <div>
-                <p className="font-medium">macOS</p>
-                <p className="text-sm opacity-70">{work.systemRequirements.macos}</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -544,7 +510,7 @@ function WorkDetail() {
                   <span className="text-sm opacity-60">{log.date}</span>
                   {isLatest && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
-                      最新
+                      最新版
                     </span>
                   )}
                   <span className="ml-auto text-sm opacity-40 flex items-center gap-1">
@@ -554,15 +520,15 @@ function WorkDetail() {
                     </svg>
                   </span>
                 </div>
-                <ul className="space-y-1">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                   {log.changes.slice(0, 2).map((change, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm opacity-70">
-                      <span className="text-primary-500 mt-1">•</span>
+                    <li key={i} className="flex items-center gap-2 text-sm opacity-70">
+                      <span className="text-primary-500 flex-shrink-0">•</span>
                       <span className="line-clamp-1">{change}</span>
                     </li>
                   ))}
                   {log.changes.length > 2 && (
-                    <li className="text-sm opacity-40 pl-4">+ 还有 {log.changes.length - 2} 项更新...</li>
+                    <li className="text-sm opacity-40 pl-4 sm:col-span-2">+ 还有 {log.changes.length - 2} 项更新...</li>
                   )}
                 </ul>
               </button>

@@ -144,10 +144,6 @@ function About() {
               { name: 'C++ Reference', url: 'https://cppreference.com/', icon: 'simple-icons:cplusplus' },
               { name: 'GitHub', url: 'https://github.com/', icon: 'simple-icons:github' },
               { name: 'Stack Overflow', url: 'https://stackoverflow.com/', icon: 'simple-icons:stackoverflow' },
-              { name: 'CMake 文档', url: 'https://cmake.org/documentation/', icon: 'simple-icons:cmake' },
-              { name: 'Vcpkg', url: 'https://vcpkg.io/', icon: 'simple-icons:microsoft' },
-              { name: 'Conan', url: 'https://conan.io/', icon: 'simple-icons:conan' },
-              { name: '掘金', url: 'https://juejin.cn/', icon: 'simple-icons:juejin' },
             ].map((link, index) => (
               <a
                 key={index}

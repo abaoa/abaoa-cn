@@ -52,12 +52,12 @@ function Works() {
         {works.map((work, index) => (
           <article
             key={work.id}
-            onClick={() => navigate(`/works/${work.id}/version/${work.latestVersion}`)}
+            onClick={() => navigate(`/works/${work.slug}/version/${work.latestVersion}`)}
             className={`${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-all duration-300 group focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2`}
             style={{ animationDelay: `${index * 0.1}s` }}
             role="listitem"
             tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && navigate(`/works/${work.id}/version/${work.latestVersion}`)}
+            onKeyDown={(e) => e.key === 'Enter' && navigate(`/works/${work.slug}/version/${work.latestVersion}`)}
             aria-label={`${work.title} - ${work.description}`}
           >
             {/* 封面图 */}
@@ -102,7 +102,7 @@ function Works() {
               
               <div className="flex items-center justify-between text-sm opacity-70">
                 <div className="flex items-center gap-2" aria-label={`支持平台: ${work.platforms.join(', ')}`}>
-                  <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+                  {work.platforms.includes('Windows') && <span className="iconify" data-icon="simple-icons:windows" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                   {work.platforms.includes('Linux') && <span className="iconify" data-icon="simple-icons:linux" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                   {work.platforms.includes('macOS') && <span className="iconify" data-icon="simple-icons:apple" style={{ fontSize: '16px' }} aria-hidden="true"></span>}
                 </div>
