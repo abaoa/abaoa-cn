@@ -1,7 +1,9 @@
 import { useTheme } from '../contexts/ThemeContext'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import PageLoader from '../components/PageLoader'
+import SEO from '../components/SEO'
+import LazyImage from '../components/LazyImage'
+import SkeletonGrid from '../components/SkeletonGrid'
 
 function Works() {
   const { theme } = useTheme()
@@ -26,11 +28,44 @@ function Works() {
   }, [])
 
   if (loading) {
-    return <PageLoader />
+    return (
+      <>
+        <SEO 
+          title="作品"
+          description="使用 Qt 框架开发的跨平台桌面应用程序作品集"
+          keywords="Qt作品, 跨平台应用, 桌面软件"
+        />
+        <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
+          <header className="text-center mb-12">
+            <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-4 ${
+              theme === 'light' 
+                ? 'bg-gradient-to-r from-primary-500/20 to-secondary/20 text-primary-600 border border-primary-500/30' 
+                : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
+            }`}>
+              <span className="iconify flex-shrink-0" data-icon="lucide:briefcase" style={{ fontSize: '16px' }} aria-hidden="true"></span>
+              <span>Qt 应用程序作品集</span>
+            </div>
+            <h1 id="works-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              我的作品
+            </h1>
+            <p className="text-lg opacity-70 max-w-2xl mx-auto">
+              使用 Qt 框架开发的跨平台桌面应用程序
+            </p>
+          </header>
+          <SkeletonGrid count={6} />
+        </section>
+      </>
+    )
   }
 
   return (
-    <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
+    <>
+      <SEO 
+        title="作品"
+        description="使用 Qt 框架开发的跨平台桌面应用程序作品集，包括文件管理器、代码编辑器、数据库工具等。"
+        keywords="Qt作品, 跨平台应用, 桌面软件, C++开发, Qt6, Qt5"
+      />
+      <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
       <header className="text-center mb-12">
         <div className={`inline-flex items-center gap-1.5 px-6 py-2 rounded-full text-sm font-medium mb-4 ${
           theme === 'light' 
@@ -62,11 +97,11 @@ function Works() {
           >
             {/* 封面图 */}
             <div className="relative h-40 overflow-hidden">
-              <img 
+              <LazyImage 
                 src={work.coverImage} 
                 alt=""
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                loading="lazy"
+                placeholderClassName="h-40"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
               <div className="absolute bottom-3 left-4 right-4">
@@ -112,6 +147,7 @@ function Works() {
         ))}
       </div>
     </section>
+    </>
   )
 }
 

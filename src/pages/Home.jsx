@@ -1,6 +1,7 @@
 import { useTheme } from '../contexts/ThemeContext'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import SEO from '../components/SEO'
 
 function TypeWriter({ text, speed = 100, onComplete }) {
   const [displayText, setDisplayText] = useState('')
@@ -68,8 +69,14 @@ function Home() {
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh]">
-      {/* Hero Section */}
+    <>
+      <SEO 
+        title="首页"
+        description="阿宝啊@abaoa.cn - Qt/C++ 开发工程师，专注于跨平台桌面应用开发。分享技术经验、作品展示与心得体会。"
+        keywords="阿宝啊, abaoa, Qt, C++, 跨平台开发, 桌面应用, 开发者"
+      />
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        {/* Hero Section */}
       <section 
         className={`p-12 rounded-3xl text-center ${theme === 'light' ? 'glass-light' : 'glass-dark'} glass-card max-w-4xl mx-4`}
         aria-labelledby="hero-title"
@@ -175,6 +182,7 @@ function Home() {
         </div>
       </section>
     </div>
+    </>
   )
 }
 

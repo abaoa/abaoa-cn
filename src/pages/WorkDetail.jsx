@@ -1,6 +1,7 @@
 import { useTheme } from '../contexts/ThemeContext'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import SEO from '../components/SEO'
 import ImageLightbox from '../components/ImageLightbox'
 import PageLoader from '../components/PageLoader'
 
@@ -198,13 +199,23 @@ function WorkDetail() {
   const availablePlatforms = Object.keys(downloads)
   const isCurrentPlatformSupported = availablePlatforms.includes(userPlatform)
 
-  // 版本页面的返回链接
-  const backLink = isVersionPage ? `/works/${slug}` : '/works'
-  const backText = isVersionPage ? '返回作品主页' : '返回作品列表'
+  // 返回链接
+  const backLink = '/works'
+  const backText = '返回作品列表'
 
   return (
-    <article className="py-8 min-h-[80vh]" aria-labelledby="work-title">
-      {/* 返回导航 */}
+    <>
+      {work && (
+        <SEO 
+          title={`${work.title}${isVersionPage && versionData ? ` v${versionData.version}` : ''}`}
+          description={work.description}
+          keywords={`${work.tags?.join(', ')}, Qt, C++, ${work.platforms?.join(', ')}`}
+          image={`https://abaoa.cn${work.coverImage}`}
+          type="SoftwareApplication"
+        />
+      )}
+      <article className="py-8 min-h-[80vh]" aria-labelledby="work-title">
+        {/* 返回导航 */}
       <nav aria-label="面包屑导航" className="mb-6 flex items-center gap-2">
         <Link 
           to={backLink}
@@ -219,16 +230,16 @@ function WorkDetail() {
       <header className="relative h-48 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-8 group">
         <img 
           src={work.coverImage} 
-          alt={work.title}
+          alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className={`p-3 rounded-2xl ${theme === 'light' ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-md`}>
-              <span className="iconify text-4xl sm:text-5xl text-white" data-icon={work.icon} aria-hidden="true"></span>
+          <div className="flex items-center gap-4">
+            <div className={`flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${theme === 'light' ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-md flex-shrink-0`}>
+              <span className="iconify text-3xl sm:text-4xl text-white" data-icon={work.icon} aria-hidden="true"></span>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-2">
                 <h1 id="work-title" className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{work.title}</h1>
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-md border border-white/30" aria-label={`版本 ${isVersionPage && versionData ? versionData.version : work.latestVersion}`}>
@@ -250,7 +261,7 @@ function WorkDetail() {
           aria-labelledby="screenshots-title"
         >
           <h2 id="screenshots-title" className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2">
-            <span className="iconify text-primary-500" data-icon="simple-icons:image" style={{ fontSize: '24px' }} aria-hidden="true"></span>
+            <span className="iconify text-primary-500 flex-shrink-0" data-icon="simple-icons:image" style={{ fontSize: '24px' }} aria-hidden="true"></span>
             应用截图
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" role="list" aria-label="应用截图列表">
@@ -259,11 +270,11 @@ function WorkDetail() {
                 key={index}
                 className="relative rounded-2xl overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 onClick={() => openLightbox(index)}
-                aria-label={`查看${work.title}截图 ${index + 1}`}
+                aria-label="查看大图"
               >
                 <img 
                   src={screenshot} 
-                  alt={`${work.title} 截图 ${index + 1}`}
+                  alt=""
                   className="w-full h-auto transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
@@ -580,6 +591,7 @@ function WorkDetail() {
         />
       )}
     </article>
+    </>
   )
 }
 
