@@ -777,7 +777,7 @@ function Admin() {
               ))}
             </div>
             <div className="mt-3 flex gap-2">
-              {['windows', 'linux', 'macos'].filter(p => !editingWork.versions[0].downloads[p]).map(platform => (
+              {['windows', 'linux', 'macos'].filter(p => !editingWork.versions[activeVersionIndex].downloads[p]).map(platform => (
                 <button
                   key={platform}
                   onClick={() => addVersionDownloadPlatform(platform)}
@@ -789,7 +789,7 @@ function Admin() {
                 </button>
               ))}
             </div>
-          </div>
+          )}
         </section>
 
         {/* 截图 */}
