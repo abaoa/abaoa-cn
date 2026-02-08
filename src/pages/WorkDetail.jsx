@@ -42,6 +42,7 @@ function WorkDetail() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [work, setWork] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
 
   // 复制 MD5 到剪贴板
@@ -58,13 +59,18 @@ function WorkDetail() {
   // 加载作品详细信息
   useEffect(() => {
     async function loadWork() {
-      if (!slug) return
+      if (!slug) {
+        setError('缺少作品标识')
+        setLoading(false)
+        return
+      }
       
       try {
         setLoading(true)
+        setError(null)
         const response = await fetch(`/works/${slug}/info.json`)
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          throw new Error(`加载失败: ${response.status}`)
         }
         const workInfo = await response.json()
         
@@ -105,6 +111,7 @@ function WorkDetail() {
         })
       } catch (error) {
         console.error('Failed to load work:', error)
+        setError(error.message || '加载失败')
       } finally {
         setLoading(false)
       }
@@ -115,8 +122,8 @@ function WorkDetail() {
 
   // 检查是否是特定版本页面
   const isVersionPage = !!versionParam
-  const versionData = isVersionPage 
-    ? work?.changelog.find(v => v.version === versionParam)
+  const versionData = isVersionPage && work?.changelog
+    ? work.changelog.find(v => v.version === versionParam)
     : null
 
   const openLightbox = (index) => {
@@ -138,11 +145,11 @@ function WorkDetail() {
     return <PageLoader />
   }
 
-  if (!work) {
+  if (error || !work) {
     return (
       <div className="py-20 text-center">
-        <h1 className="text-4xl font-bold mb-4">作品未找到</h1>
-        <p className="opacity-70 mb-6">抱歉，您访问的作品不存在。</p>
+        <h1 className="text-4xl font-bold mb-4">{error ? '加载失败' : '作品未找到'}</h1>
+        <p className="opacity-70 mb-6">{error || '抱歉，您访问的作品不存在。'}</p>
         <Link 
           to="/works" 
           className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold ${
