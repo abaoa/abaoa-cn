@@ -6,8 +6,16 @@
       "title": "文件管理器 Pro",
       "description": "一款功能强大的跨平台文件管理工具，支持标签页、双窗格、文件预览等功能。",
       "icon": "simple-icons:qt",
-      "tags": ["Qt6", "C++", "跨平台"],
-      "platforms": ["Windows", "Linux", "macOS"],
+      "tags": [
+        "Qt6",
+        "C++",
+        "跨平台"
+      ],
+      "platforms": [
+        "Windows",
+        "Linux",
+        "macOS"
+      ],
       "latestVersion": "2.5.0",
       "coverImage": "/works/filemanager-pro/cover.jpg"
     },
@@ -17,8 +25,15 @@
       "title": "代码编辑器 Lite",
       "description": "轻量级代码编辑器，专为 Qt/C++ 开发设计，支持语法高亮、代码补全、调试等功能。",
       "icon": "simple-icons:qt",
-      "tags": ["Qt6", "C++", "编辑器"],
-      "platforms": ["Windows", "Linux"],
+      "tags": [
+        "Qt6",
+        "C++",
+        "编辑器"
+      ],
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
       "latestVersion": "1.8.2",
       "coverImage": "/works/codeeditor-lite/cover.jpg"
     },
@@ -28,8 +43,16 @@
       "title": "数据库管理工具",
       "description": "支持 MySQL、PostgreSQL、SQLite 等多种数据库的可视化管理工具。",
       "icon": "simple-icons:qt",
-      "tags": ["Qt5", "C++", "数据库"],
-      "platforms": ["Windows", "Linux", "macOS"],
+      "tags": [
+        "Qt5",
+        "C++",
+        "数据库"
+      ],
+      "platforms": [
+        "Windows",
+        "Linux",
+        "macOS"
+      ],
       "latestVersion": "3.0.1",
       "coverImage": "/works/dbmanager/cover.jpg"
     },
@@ -39,8 +62,15 @@
       "title": "图像处理工具",
       "description": "专业的图像处理软件，支持批量处理、滤镜效果、格式转换等功能。",
       "icon": "simple-icons:qt",
-      "tags": ["Qt6", "C++", "图像处理"],
-      "platforms": ["Windows", "macOS"],
+      "tags": [
+        "Qt6",
+        "C++",
+        "图像处理"
+      ],
+      "platforms": [
+        "Windows",
+        "macOS"
+      ],
       "latestVersion": "1.2.0",
       "coverImage": "/works/imagetool/cover.jpg"
     }
