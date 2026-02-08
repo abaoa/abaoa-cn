@@ -31,9 +31,9 @@ function MobileNav() {
             key={item.path}
             to={item.path}
             className={({ isActive }) => `
-              flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-200
+              flex flex-col items-center gap-1 px-6 py-3 rounded-2xl transition-all duration-200
               ${isActive 
-                ? 'text-primary-500' 
+                ? 'text-primary-500 bg-primary-500/15 backdrop-blur-md shadow-inner scale-105' 
                 : theme === 'light' ? 'text-gray-500' : 'text-gray-400'
               }
             `}
