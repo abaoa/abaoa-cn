@@ -2,7 +2,6 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ImageLightbox from '../components/ImageLightbox'
-import CopyButton from '../components/CopyButton'
 import PageLoader from '../components/PageLoader'
 
 // 检测用户操作系统
@@ -43,6 +42,18 @@ function WorkDetail() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [work, setWork] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  // 复制 MD5 到剪贴板
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
+  }
 
   // 加载作品详细信息
   useEffect(() => {
@@ -323,18 +334,31 @@ function WorkDetail() {
             <dt className="text-sm opacity-60 mb-1">支持平台</dt>
             <dd className="flex flex-wrap gap-2 mt-1">
               {work.platforms.map(p => (
-                <span key={p} className="text-xs sm:text-sm px-2 py-1 rounded bg-primary-500/20 whitespace-nowrap">{p}</span>
+                <span key={p} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary-500/20 whitespace-nowrap">
+                  <span className="iconify" data-icon={p === 'Windows' ? 'simple-icons:windows' : p === 'Linux' ? 'simple-icons:linux' : 'simple-icons:apple'} style={{ fontSize: '12px' }}></span>
+                  {p}
+                </span>
               ))}
             </dd>
           </div>
         </dl>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm opacity-60 mb-6">
-          <span className="flex-shrink-0">MD5:</span>
-          <code className="bg-black/10 px-3 py-1 rounded font-mono text-xs break-all flex-1" aria-label={`文件校验码: ${isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5}`}>
-            {isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5}
-          </code>
-          <CopyButton text={isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5} label="复制" successLabel="已复制" />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm mb-6">
+          <span className="flex-shrink-0 opacity-60">MD5:</span>
+          <button
+            onClick={() => copyToClipboard(isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs break-all flex-1 transition-colors ${
+              theme === 'light'
+                ? 'bg-black/10 hover:bg-black/20 text-gray-700'
+                : 'bg-white/10 hover:bg-white/20 text-gray-300'
+            }`}
+            title="点击复制"
+          >
+            <span>{isVersionPage && versionData ? getVersionMd5(versionData.version) : work.md5}</span>
+            <span className={`text-xs flex-shrink-0 ${copied ? 'text-green-500' : 'opacity-50'}`}>
+              {copied ? '已复制' : '复制'}
+            </span>
+          </button>
         </div>
 
         {/* 智能下载按钮 */}
@@ -349,19 +373,19 @@ function WorkDetail() {
               </div>
               <a 
                 href={downloads[userPlatform].url}
-                className={`flex flex-col items-center justify-center gap-1 w-full py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
+                className={`flex flex-col items-center justify-center gap-2 w-full py-4 px-4 rounded-xl font-semibold transition-colors ${
                   theme === 'light'
                     ? 'bg-white/80 hover:bg-white text-gray-800'
                     : 'bg-white/20 hover:bg-white/30 text-gray-100'
                 }`}
                 aria-label={`下载 ${getPlatformName(userPlatform)} 版本，文件大小 ${downloads[userPlatform].size}`}
               >
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
                   <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(userPlatform)} style={{ fontSize: '24px' }} aria-hidden="true"></span>
-                  <span className="truncate">下载 {getPlatformName(userPlatform)} 版本</span>
+                  <span className="text-base sm:text-lg">下载 {getPlatformName(userPlatform)} 版本</span>
                   <span className="text-sm font-normal opacity-60 flex-shrink-0">({downloads[userPlatform].size})</span>
                 </div>
-                <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                <span className="text-xs opacity-60 text-center">
                   系统要求：{work.systemRequirements?.[userPlatform] || '无特殊要求'}
                 </span>
               </a>
@@ -376,18 +400,18 @@ function WorkDetail() {
                     <a
                       key={platform}
                       href={downloads[platform].url}
-                      className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-3 sm:py-4 rounded-xl text-sm font-medium transition-colors ${
+                      className={`flex-1 flex flex-col items-center justify-center gap-2 px-3 py-4 rounded-xl text-sm font-medium transition-colors ${
                         theme === 'light'
                           ? 'bg-white/60 hover:bg-white/80 text-gray-700'
                           : 'bg-white/10 hover:bg-white/20 text-gray-200'
                       }`}
                     >
-                      <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
                         <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '20px' }}></span>
-                        <span className="truncate">下载 {getPlatformName(platform)} 版本</span>
-                        <span className="text-xs sm:text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
+                        <span>下载 {getPlatformName(platform)} 版本</span>
+                        <span className="text-xs opacity-60 flex-shrink-0">({downloads[platform].size})</span>
                       </div>
-                      <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                      <span className="text-xs opacity-60 text-center">
                         系统要求：{work.systemRequirements?.[platform] || '无特殊要求'}
                       </span>
                     </a>
@@ -414,25 +438,25 @@ function WorkDetail() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               {['windows', 'linux', 'macos']
                 .filter(p => availablePlatforms.includes(p))
                 .map(platform => (
                 <a
                   key={platform}
                   href={downloads[platform].url}
-                  className={`flex flex-col items-center justify-center gap-1 py-3 sm:py-4 px-4 rounded-xl font-semibold transition-colors ${
+                  className={`flex-1 flex flex-col items-center justify-center gap-2 py-4 px-4 rounded-xl font-semibold transition-colors ${
                     theme === 'light'
                       ? 'bg-white/60 hover:bg-white/80 text-gray-800'
                       : 'bg-white/10 hover:bg-white/20 text-gray-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="iconify flex-shrink-0" data-icon={getPlatformIcon(platform)} style={{ fontSize: '24px' }}></span>
-                    <span className="truncate">下载 {getPlatformName(platform)} 版本</span>
+                    <span>下载 {getPlatformName(platform)} 版本</span>
                     <span className="text-sm opacity-60 flex-shrink-0">({downloads[platform].size})</span>
                   </div>
-                  <span className="text-xs opacity-60 mt-1 text-center line-clamp-1">
+                  <span className="text-xs opacity-60 text-center">
                     系统要求：{work.systemRequirements?.[platform] || '无特殊要求'}
                   </span>
                 </a>
