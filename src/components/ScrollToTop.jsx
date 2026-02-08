@@ -44,7 +44,7 @@ function ScrollToTop() {
       {/* 返回顶部按钮 */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 p-3 rounded-full transition-all duration-300 z-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+        className={`fixed bottom-24 sm:bottom-8 right-4 sm:right-8 p-3 rounded-full transition-all duration-300 z-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
           isVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-4 pointer-events-none'
