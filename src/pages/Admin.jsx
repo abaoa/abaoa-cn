@@ -176,6 +176,55 @@ function Admin() {
     }))
   }
 
+  // 计算文件 MD5
+  const calculateMD5 = async (file) => {
+    const buffer = await file.arrayBuffer()
+    const hashBuffer = await crypto.subtle.digest('MD5', buffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
+  // 格式化文件大小
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  // 处理文件选择
+  const handleFileSelect = async (platform, file) => {
+    if (!file) return
+    try {
+      const md5 = await calculateMD5(file)
+      const size = formatFileSize(file.size)
+      const filename = file.name
+      
+      setEditingWork(prev => ({
+        ...prev,
+        versions: prev.versions.map((v, i) => {
+          if (i !== activeVersionIdx) return v
+          return {
+            ...v,
+            downloads: {
+              ...v.downloads,
+              [platform]: { 
+                ...v.downloads[platform], 
+                filename,
+                size,
+                md5 
+              }
+            }
+          }
+        })
+      }))
+      setMessage(`✅ ${platform} 文件信息已自动填充`)
+    } catch (err) {
+      setMessage('❌ 计算 MD5 失败')
+    }
+  }
+
   const exportJSON = () => {
     const dataStr = JSON.stringify(editingWork, null, 2)
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
@@ -381,6 +430,24 @@ function Admin() {
                         <span className="font-medium capitalize">{platform}</span>
                         <button onClick={() => removeDownloadPlatform(platform)} className="text-sm text-red-500">删除平台</button>
                       </div>
+                      
+                      {/* 文件选择按钮 */}
+                      <div className="mb-3">
+                        <label className={`flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
+                          theme === 'light' 
+                            ? 'border-gray-300 hover:border-primary-500 hover:bg-primary-50' 
+                            : 'border-gray-600 hover:border-primary-400 hover:bg-white/5'
+                        }`}>
+                          <span className="iconify" data-icon="lucide:upload-cloud"></span>
+                          <span className="text-sm">选择 {platform} 安装包文件</span>
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            onChange={e => handleFileSelect(platform, e.target.files[0])}
+                          />
+                        </label>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input type="text" value={info.url} onChange={e => updateVersionDownload(platform, 'url', e.target.value)} placeholder="下载链接" className={`px-3 py-2 rounded-lg border text-sm ${theme === 'light' ? 'border-gray-200 bg-white' : 'border-white/10 bg-white/5'}`} />
                         <input type="text" value={info.filename} onChange={e => updateVersionDownload(platform, 'filename', e.target.value)} placeholder="文件名" className={`px-3 py-2 rounded-lg border text-sm ${theme === 'light' ? 'border-gray-200 bg-white' : 'border-white/10 bg-white/5'}`} />
