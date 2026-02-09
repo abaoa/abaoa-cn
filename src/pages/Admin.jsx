@@ -35,6 +35,7 @@ function Admin() {
   const [isCreating, setIsCreating] = useState(false)
   const [message, setMessage] = useState('')
   const [activeVersionIdx, setActiveVersionIdx] = useState(0)
+  const [platformMessages, setPlatformMessages] = useState({})
 
   useEffect(() => {
     fetch('/works/manifest.json')
@@ -50,6 +51,7 @@ function Admin() {
       setEditingWork(data)
       setActiveVersionIdx(0)
       setIsCreating(false)
+      setMessage('')
     } catch (err) {
       setMessage('❌ 加载失败')
     }
@@ -60,6 +62,7 @@ function Admin() {
     setEditingWork({ ...emptyWork, id: newId })
     setActiveVersionIdx(0)
     setIsCreating(true)
+    setMessage('')
   }
 
   const updateField = (field, value) => {
@@ -176,12 +179,87 @@ function Admin() {
     }))
   }
 
-  // 计算文件 MD5
+  // 计算文件 MD5（纯 JavaScript 实现）
   const calculateMD5 = async (file) => {
     const buffer = await file.arrayBuffer()
-    const hashBuffer = await crypto.subtle.digest('MD5', buffer)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const uint8Array = new Uint8Array(buffer)
+
+    // MD5 辅助函数
+    const rotateLeft = (x, n) => (x << n) | (x >>> (32 - n))
+    const addUnsigned = (x, y) => (x + y) >>> 0
+
+    const s = [
+      7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21
+    ]
+    const K = new Uint32Array([
+      0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a,
+      0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+      0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821, 0xf61e2562, 0xc040b340,
+      0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+      0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8,
+      0x676f02d9, 0x8d2a4c8a, 0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+      0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70, 0x289b7ec6, 0xeaa127fa,
+      0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+      0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92,
+      0xffeff47d, 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+      0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+    ])
+
+    let a0 = 0x67452301
+    let b0 = 0xefcdab89
+    let c0 = 0x98badcfe
+    let d0 = 0x10325476
+
+    const originalLength = uint8Array.length
+    const paddedLength = Math.ceil((originalLength + 9) / 64) * 64
+    const padded = new Uint8Array(paddedLength)
+    padded.set(uint8Array)
+    padded[originalLength] = 0x80
+
+    const view = new DataView(padded.buffer)
+    view.setUint32(paddedLength - 8, originalLength * 8, true)
+    view.setUint32(paddedLength - 4, (originalLength * 8) >>> 32, true)
+
+    const M = new Uint32Array(16)
+    for (let i = 0; i < paddedLength; i += 64) {
+      for (let j = 0; j < 16; j++) {
+        M[j] = view.getUint32(i + j * 4, true)
+      }
+
+      let A = a0, B = b0, C = c0, D = d0
+
+      for (let j = 0; j < 64; j++) {
+        let F, g
+        if (j < 16) {
+          F = (B & C) | (~B & D)
+          g = j
+        } else if (j < 32) {
+          F = (D & B) | (~D & C)
+          g = (5 * j + 1) % 16
+        } else if (j < 48) {
+          F = B ^ C ^ D
+          g = (3 * j + 5) % 16
+        } else {
+          F = C ^ (B | ~D)
+          g = (7 * j) % 16
+        }
+
+        const temp = D
+        D = C
+        C = B
+        B = addUnsigned(B, rotateLeft(addUnsigned(addUnsigned(addUnsigned(A, F), K[j]), M[g]), s[Math.floor(j / 16) * 4 + j % 4]))
+        A = temp
+      }
+
+      a0 = addUnsigned(a0, A)
+      b0 = addUnsigned(b0, B)
+      c0 = addUnsigned(c0, C)
+      d0 = addUnsigned(d0, D)
+    }
+
+    const toHex = (n) => (n >>> 0).toString(16).padStart(8, '0')
+    const result = toHex(a0) + toHex(b0) + toHex(c0) + toHex(d0)
+    return result.match(/../g).reverse().join('').match(/......../g).map(s => s.match(/../g).reverse().join('')).join('')
   }
 
   // 格式化文件大小
@@ -200,28 +278,40 @@ function Admin() {
       const md5 = await calculateMD5(file)
       const size = formatFileSize(file.size)
       const filename = file.name
-      
-      setEditingWork(prev => ({
+
+      setEditingWork(prev => {
+        const newVersions = [...prev.versions]
+        const version = { ...newVersions[activeVersionIdx] }
+        const downloads = { ...version.downloads }
+
+        downloads[platform] = {
+          url: downloads[platform]?.url || '',
+          filename,
+          size,
+          md5
+        }
+
+        version.downloads = downloads
+        newVersions[activeVersionIdx] = version
+
+        return { ...prev, versions: newVersions }
+      })
+
+      setPlatformMessages(prev => ({
         ...prev,
-        versions: prev.versions.map((v, i) => {
-          if (i !== activeVersionIdx) return v
-          return {
-            ...v,
-            downloads: {
-              ...v.downloads,
-              [platform]: { 
-                ...v.downloads[platform], 
-                filename,
-                size,
-                md5 
-              }
-            }
-          }
-        })
+        [platform]: { type: 'success', text: `✅ 已填充: ${filename} (${size})` }
       }))
-      setMessage(`✅ ${platform} 文件信息已自动填充`)
+
+      // 3秒后清除该平台的提示
+      setTimeout(() => {
+        setPlatformMessages(prev => ({ ...prev, [platform]: null }))
+      }, 3000)
     } catch (err) {
-      setMessage('❌ 计算 MD5 失败')
+      console.error('计算 MD5 失败:', err)
+      setPlatformMessages(prev => ({
+        ...prev,
+        [platform]: { type: 'error', text: '❌ 计算 MD5 失败: ' + err.message }
+      }))
     }
   }
 
@@ -280,7 +370,7 @@ function Admin() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">{isCreating ? '新建作品' : '编辑作品'}</h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => setEditingWork(null)} className={`px-4 py-2 rounded-lg ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>返回列表</button>
+          <button onClick={() => { setEditingWork(null); setMessage('') }} className={`px-4 py-2 rounded-lg ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>返回列表</button>
           <button onClick={copyToClipboard} className={`px-4 py-2 rounded-lg font-medium ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'}`}>复制 JSON</button>
           <button onClick={exportJSON} className={`px-6 py-2 rounded-lg font-medium ${theme === 'light' ? 'bg-primary-500 text-white' : 'bg-primary-500/80 text-white'}`}>下载 info.json</button>
         </div>
@@ -346,7 +436,7 @@ function Admin() {
             {editingWork.versions.map((v, i) => (
               <button
                 key={i}
-                onClick={() => setActiveVersionIdx(i)}
+                onClick={() => { setActiveVersionIdx(i); setPlatformMessages({}) }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   activeVersionIdx === i
                     ? theme === 'light' ? 'bg-primary-500 text-white' : 'bg-primary-500/80 text-white'
@@ -434,19 +524,30 @@ function Admin() {
                       {/* 文件选择按钮 */}
                       <div className="mb-3">
                         <label className={`flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
-                          theme === 'light' 
-                            ? 'border-gray-300 hover:border-primary-500 hover:bg-primary-50' 
+                          theme === 'light'
+                            ? 'border-gray-300 hover:border-primary-500 hover:bg-primary-50'
                             : 'border-gray-600 hover:border-primary-400 hover:bg-white/5'
                         }`}>
                           <span className="iconify" data-icon="lucide:upload-cloud"></span>
                           <span className="text-sm">选择 {platform} 安装包文件</span>
-                          <input 
-                            type="file" 
-                            className="hidden" 
+                          <input
+                            type="file"
+                            className="hidden"
                             onChange={e => handleFileSelect(platform, e.target.files[0])}
                           />
                         </label>
                       </div>
+
+                      {/* 平台提示信息 */}
+                      {platformMessages[platform] && (
+                        <div className={`p-3 rounded-lg mb-3 text-sm ${
+                          platformMessages[platform].type === 'success'
+                            ? theme === 'light' ? 'bg-green-100 text-green-700' : 'bg-green-500/20 text-green-400'
+                            : theme === 'light' ? 'bg-red-100 text-red-700' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {platformMessages[platform].text}
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input type="text" value={info.url} onChange={e => updateVersionDownload(platform, 'url', e.target.value)} placeholder="下载链接" className={`px-3 py-2 rounded-lg border text-sm ${theme === 'light' ? 'border-gray-200 bg-white' : 'border-white/10 bg-white/5'}`} />
