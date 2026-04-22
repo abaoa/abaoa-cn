@@ -2,77 +2,68 @@ import { useMousePosition } from '../hooks/useMousePosition'
 
 function MouseFollower() {
   const { normalizedPosition } = useMousePosition()
-  
-  // 计算移动强度
-  const moveX = normalizedPosition.x * 30
-  const moveY = normalizedPosition.y * 30
+
+  // 计算移动强度 - 更柔和的跟随
+  const moveX = normalizedPosition.x * 20
+  const moveY = normalizedPosition.y * 20
 
   return (
     <div className="animated-bg fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* 粒子1 - 左上 */}
-      <div 
-        className="particle absolute rounded-full opacity-30"
-        style={{ 
-          width: '300px', 
-          height: '300px', 
-          top: '10%', 
-          left: '10%',
-          transform: `translate(${moveX * 0.5}px, ${moveY * 0.5}px)`,
-          transition: 'transform 0.3s ease-out'
-        }}
-      />
-      
-      {/* 粒子2 - 右下 */}
-      <div 
-        className="particle absolute rounded-full opacity-30"
-        style={{ 
-          width: '200px', 
-          height: '200px', 
-          top: '60%', 
-          left: '80%',
-          animationDelay: '2s',
-          transform: `translate(${-moveX * 0.3}px, ${-moveY * 0.3}px)`,
-          transition: 'transform 0.3s ease-out'
-        }}
-      />
-      
-      {/* 粒子3 - 左下 */}
-      <div 
-        className="particle absolute rounded-full opacity-30"
-        style={{ 
-          width: '250px', 
-          height: '250px', 
-          top: '80%', 
-          left: '20%',
-          animationDelay: '4s',
-          transform: `translate(${moveX * 0.4}px, ${-moveY * 0.4}px)`,
-          transition: 'transform 0.3s ease-out'
-        }}
-      />
-      
-      {/* 粒子4 - 右上 */}
-      <div 
-        className="particle absolute rounded-full opacity-30"
-        style={{ 
-          width: '180px', 
-          height: '180px', 
-          top: '30%', 
-          left: '70%',
-          animationDelay: '6s',
-          transform: `translate(${-moveX * 0.6}px, ${moveY * 0.6}px)`,
-          transition: 'transform 0.3s ease-out'
-        }}
-      />
-      
-      {/* 鼠标光晕 */}
-      <div 
-        className="absolute w-[600px] h-[600px] rounded-full pointer-events-none opacity-20"
+      {/* 柔和光晕1 - 左上 */}
+      <div
+        className="absolute rounded-full blur-3xl"
         style={{
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)',
+          width: '500px',
+          height: '500px',
+          top: '5%',
+          left: '5%',
+          background: 'radial-gradient(circle, rgba(100, 108, 255, 0.12) 0%, transparent 70%)',
+          transform: `translate(${moveX * 0.3}px, ${moveY * 0.3}px)`,
+          transition: 'transform 0.8s ease-out',
+          willChange: 'transform'
+        }}
+      />
+
+      {/* 柔和光晕2 - 右下 */}
+      <div
+        className="absolute rounded-full blur-3xl"
+        style={{
+          width: '400px',
+          height: '400px',
+          top: '65%',
+          left: '75%',
+          background: 'radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 70%)',
+          transform: `translate(${-moveX * 0.2}px, ${-moveY * 0.2}px)`,
+          transition: 'transform 0.8s ease-out',
+          willChange: 'transform'
+        }}
+      />
+
+      {/* 柔和光晕3 - 中央偏下 */}
+      <div
+        className="absolute rounded-full blur-3xl"
+        style={{
+          width: '600px',
+          height: '600px',
+          top: '50%',
+          left: '50%',
+          background: 'radial-gradient(circle, rgba(83, 91, 242, 0.08) 0%, transparent 70%)',
+          transform: `translate(calc(-50% + ${moveX * 0.15}px), calc(-50% + ${moveY * 0.15}px))`,
+          transition: 'transform 1s ease-out',
+          willChange: 'transform'
+        }}
+      />
+
+      {/* 鼠标跟随光晕 - 更大的柔和光斑 */}
+      <div
+        className="absolute w-[800px] h-[800px] rounded-full pointer-events-none blur-3xl"
+        style={{
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(138, 43, 226, 0.04) 40%, transparent 70%)',
           left: '50%',
           top: '50%',
-          transform: `translate(calc(-50% + ${moveX * 2}px), calc(-50% + ${moveY * 2}px))`,
-          transition: 'transform 0.5s ease-out'
+          transform: `translate(calc(-50% + ${moveX * 3}px), calc(-50% + ${moveY * 3}px))`,
+          transition: 'transform 0.6s ease-out',
+          willChange: 'transform'
         }}
       />
     </div>
