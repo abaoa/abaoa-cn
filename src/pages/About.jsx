@@ -42,7 +42,7 @@ function About() {
           <div className="relative">
             <div className="w-56 h-56 rounded-full overflow-hidden border-4 border-gradient-to-r from-primary-500 to-purple-500 shadow-2xl">
               <img 
-                src="https://github.com/abaoa.png" 
+                src="https://gitee.com/abaoa716.png" 
                 alt="abaoa 的个人头像"
                 className="w-full h-full object-cover"
               />

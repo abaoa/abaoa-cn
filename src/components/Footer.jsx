@@ -15,7 +15,7 @@ function Footer() {
           {/* 顶部：版权和备案信息 */}
           <div className="text-center">
             <p className="text-sm opacity-70">
-              © 2021-{currentYear} abaoa.cn. All rights reserved.
+              Copyright © 2021-{currentYear} abaoa.cn. All rights reserved.
             </p>
             <p className="text-xs opacity-50 mt-2">
               <a 
