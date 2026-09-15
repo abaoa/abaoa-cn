@@ -73,6 +73,25 @@
       ],
       "latestVersion": "1.2.0",
       "coverImage": "/works/imagetool/cover.jpg"
+    },
+    {
+      "id": 5,
+      "slug": "tabpilot",
+      "title": "谱领航 TabPilot",
+      "description": "吉他谱自动跟随练习工具：开启麦克风实时识别你弹到哪，谱面自动滚动、高亮并放大。",
+      "icon": "lucide:music",
+      "tags": [
+        "Tauri 2",
+        "JavaScript",
+        "Web Audio",
+        "吉他"
+      ],
+      "platforms": [
+        "Windows",
+        "Web"
+      ],
+      "latestVersion": "1.0.0",
+      "coverImage": "/works/tabpilot/cover.png"
     }
   ]
 }

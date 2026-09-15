@@ -1,0 +1,52 @@
+{
+  "id": 5,
+  "slug": "tabpilot",
+  "title": "谱领航 TabPilot",
+  "description": "吉他谱自动跟随练习工具：开启麦克风实时识别你弹到哪，谱面自动滚动、高亮并放大。",
+  "icon": "lucide:music",
+  "tags": ["Tauri 2", "JavaScript", "Web Audio", "吉他"],
+  "platforms": ["Windows", "Web"],
+  "latestVersion": "1.0.0",
+  "coverImage": "/works/tabpilot/cover.png",
+  "demoUrl": "/tabpilot/",
+  "repoUrl": "https://github.com/abaoa/TabPilot",
+  "features": [
+    "实时听音识别弹奏位置",
+    "谱面自动滚动与当前小节高亮",
+    "放大镜跟随，不用眯眼找谱",
+    "结构化谱与图片谱两种模式",
+    "浅色 / 深色 / 跟随系统主题",
+    "纯前端实现，可离线与 PWA 安装"
+  ],
+  "systemRequirements": {
+    "windows": "Windows 10 64 位（需麦克风，WebView2 运行时）",
+    "web": "支持 Web Audio 的现代浏览器（Chrome / Edge / Safari），需授权麦克风"
+  },
+  "versions": [
+    {
+      "version": "1.0.0",
+      "date": "2026-09-15",
+      "changes": [
+        "桌面壳从 Electron 迁移到 Tauri 2，安装包体积 188 MB → 3.76 MB",
+        "规范化目录与命名，重写样式体系（设计令牌 + 三层样式表）",
+        "新增设置面板与浅色 / 深色 / 跟随系统主题切换",
+        "修复本机代理接管回环请求导致的启动异常",
+        "网页版上线，支持 GitHub Actions 自动同步部署"
+      ],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "https://github.com/abaoa/TabPilot/releases/latest",
+          "filename": "TabPilot_1.0.0_x64_en-US.msi",
+          "size": "3.76 MB",
+          "md5": "4841f3f75c45bb29bfbe4fc9772b5484"
+        }
+      },
+      "screenshots": [
+        "/works/tabpilot/versions/1.0.0/screenshots/1.png",
+        "/works/tabpilot/versions/1.0.0/screenshots/2.png",
+        "/works/tabpilot/versions/1.0.0/screenshots/3.png"
+      ]
+    }
+  ]
+}
