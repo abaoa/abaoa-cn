@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  ==========================================================================
+  index.html — 谱面模式（结构化谱：alphaTex / .gp / MusicXML / MIDI）
+
+  页面结构：
+    header.app-header  顶栏（品牌 / 模式切换 / 参数 / 设置）
+    main.app-main      舞台（#alphatab 谱面渲染区 + 放大镜浮层）
+    footer.app-footer  状态栏（模式、小节、置信度、输入电平）
+
+  依赖加载顺序（不可颠倒）：
+    1. css/base.css + layout.css + components.css   设计令牌 → 布局 → 控件
+    2. js/theme.js   同步执行，先于首屏渲染确定 data-theme，避免闪白
+    3. vendor/alphaTab.js                           谱面渲染引擎（体积较大，放最后）
+    4. js/settings.js → js/app.js                   设置模块先于业务脚本
+  ==========================================================================
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f6fed" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141b" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-512.png">
+<title>谱领航 TabPilot · 吉他谱跟随</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="topbar">
+    <div class="brand">🎸 谱领航 <span class="tag">TabPilot</span></div>
+
+    <nav class="tabs">
+      <span class="on">🎼 谱面模式</span>
+      <a href="image-tab.html">🖼 图片谱模式</a>
+          <a href="/" data-site-home>🏠 主站</a>
+    </nav>
+
+    <div class="spacer"></div>
+
+    <div class="group">
+      <span class="glabel">参数</span>
+      <span class="slider">速度<input id="rate" type="range" min="50" max="200" step="5" value="100" aria-label="跟随速度"><b id="rateVal">1.0x</b></span>
+      <span class="slider only-wide">缩放<input id="zoom" type="range" min="60" max="160" step="5" value="100" aria-label="谱面缩放"><b id="zoomVal">100%</b></span>
+      <span class="slider">灵敏度<input id="gate" type="range" min="-90" max="-40" step="1" value="-72" aria-label="麦克风噪声门"><b id="gateVal">-72dB</b></span>
+    </div>
+
+    <span class="app-ver">v1.0.0</span>
+    <button class="btn icon" id="btnSettings" title="设置" aria-label="设置">⚙️</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="group">
+      <span class="glabel">曲目</span>
+      <select id="song" aria-label="选择演示曲目"></select>
+      <button class="btn" id="btnLoad">📂 导入谱面</button>
+      <input type="file" id="fileInput" accept=".gp3,.gp4,.gp5,.gpx,.gp,.musicxml,.xml,.mid,.midi" style="display:none">
+    </div>
+
+    <div class="group">
+      <span class="glabel">跟随</span>
+      <button class="btn primary" id="btnWalker">▶ BPM 滚动</button>
+      <button class="btn" id="btnMic">🎤 麦克风</button>
+      <button class="btn" id="btnSim">🤖 模拟</button>
+      <button class="btn" id="btnStop">⏹ 停止</button>
+    </div>
+
+    <div class="group">
+      <span class="glabel">视图</span>
+      <button class="btn" id="btnMag">🔍 放大镜</button>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+  <div id="alphatab"></div>
+  <div id="fallback"></div>
+
+  <!-- 放大跟随窗：克隆当前行 SVG 并放大，锚定到当前音符 -->
+  <div class="magnifier" id="magnifier">
+    <div class="mag-title">🔍 放大跟随</div>
+    <button class="mag-x" id="magClose" title="关闭放大镜" aria-label="关闭放大镜">✕</button>
+    <div id="magContent"></div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  <div class="chip"><span class="led" id="led"></span><span id="modeText">待机</span></div>
+  <div class="chip">当前小节 <b id="barNum">-</b></div>
+  <div class="chip">跟随置信度 <div class="meter"><i id="conf"></i></div></div>
+  <div class="chip">输入电平 <div class="meter brand"><i id="lvl"></i></div></div>
+  <div class="chip">实时速度 <b id="speedVal">-</b></div>
+  <div class="hint" id="hint"></div>
+</footer>
+
+<script src="vendor/alphaTab.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+<script>
+  'use strict';
+  // 放大镜关闭按钮：复用视图按钮的开关逻辑，保持单一状态源
+  document.getElementById('magClose').onclick = function () {
+    document.getElementById('btnMag').click();
+  };
+  // PWA：仅在真正的 http(s) 站点注册 Service Worker。
+  // ⚠️ 桌面壳（Tauri）内一律不注册，并清理历史遗留：
+  //    壳用的是内部资产域 http://tauri.localhost，Service Worker 发出的网络请求
+  //    不会经过 Tauri 资产协议的拦截；而 Chromium 会把 *.localhost 解析到回环地址，
+  //    于是请求落到 127.0.0.1:80 —— 那里常驻着本机加速/代理类工具（如 FastGithub），
+  //    会返回 JSON 错误页并污染缓存，表现为界面直接显示一段错误 JSON。
+  (function () {
+    if (!('serviceWorker' in navigator)) return;
+    var isShell = location.protocol === 'tauri:' ||
+                  /(^|\.)tauri\.localhost$/i.test(location.hostname);
+    if (isShell) {
+      navigator.serviceWorker.getRegistrations()
+        .then(function (rs) { rs.forEach(function (r) { r.unregister(); }); })
+        .catch(function () {});
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) {
+          ks.forEach(function (k) { caches.delete(k); });
+        }).catch(function () {});
+      }
+      return;
+    }
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+    navigator.serviceWorker.register('sw.js').catch(function (e) {
+      console.warn('Service Worker 注册失败', e);
+    });
+  })();
+</script>
+</body>
+</html>
