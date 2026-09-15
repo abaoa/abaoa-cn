@@ -3,6 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/tabpilot",
+      "destination": "/tabpilot/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/assets/(.*)",
@@ -11,6 +18,10 @@
     {
       "source": "/works/(.*)",
       "destination": "/works/$1"
+    },
+    {
+      "source": "/tabpilot/(.*)",
+      "destination": "/tabpilot/$1"
     },
     {
       "source": "/(.*)",
@@ -24,6 +35,19 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/tabpilot/vendor/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
         },
         {
           "key": "X-Content-Type-Options",
