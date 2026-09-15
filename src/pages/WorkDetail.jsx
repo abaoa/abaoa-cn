@@ -91,6 +91,8 @@ function WorkDetail() {
           fileSize: firstDownload.size || '',
           md5: firstDownload.md5 || '',
           coverImage: workInfo.coverImage,
+          demoUrl: workInfo.demoUrl || '',
+          repoUrl: workInfo.repoUrl || '',
           screenshots: latestVersion?.screenshots || [],
           changelog: workInfo.versions.map(v => ({
             version: v.version,
@@ -253,6 +255,32 @@ function WorkDetail() {
           </div>
         </div>
       </header>
+
+      {/* 在线体验 / 源码仓库 */}
+      {(work.demoUrl || work.repoUrl) && (
+        <div className="flex flex-wrap gap-3 mb-8">
+          {work.demoUrl && (
+            <a
+              href={work.demoUrl}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold bg-primary-500 text-white hover:opacity-90 transition-opacity"
+            >
+              <span className="iconify flex-shrink-0" data-icon="lucide:play" style={{ fontSize: '18px' }} aria-hidden="true"></span>
+              立即在线体验
+            </a>
+          )}
+          {work.repoUrl && (
+            <a
+              href={work.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-medium glass-button"
+            >
+              <span className="iconify flex-shrink-0" data-icon="simple-icons:github" style={{ fontSize: '18px' }} aria-hidden="true"></span>
+              源码仓库
+            </a>
+          )}
+        </div>
+      )}
 
       {/* 截图画廊 */}
       {work.screenshots && work.screenshots.length > 0 && (

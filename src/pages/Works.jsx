@@ -32,7 +32,7 @@ function Works() {
       <>
         <SEO 
           title="作品"
-          description="使用 Qt 框架开发的跨平台桌面应用程序作品集"
+          description="桌面应用与 Web 工具作品集"
           keywords="Qt作品, 跨平台应用, 桌面软件"
         />
         <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
@@ -43,13 +43,13 @@ function Works() {
                 : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
             }`}>
               <span className="iconify flex-shrink-0" data-icon="lucide:briefcase" style={{ fontSize: '16px' }} aria-hidden="true"></span>
-              <span>Qt 应用程序作品集</span>
+              <span>应用作品集</span>
             </div>
             <h1 id="works-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
               我的作品
             </h1>
             <p className="text-lg opacity-70 max-w-2xl mx-auto">
-              使用 Qt 框架开发的跨平台桌面应用程序
+              桌面应用与 Web 工具作品集
             </p>
           </header>
           <SkeletonGrid count={6} />
@@ -62,8 +62,8 @@ function Works() {
     <>
       <SEO 
         title="作品"
-        description="使用 Qt 框架开发的跨平台桌面应用程序作品集，包括文件管理器、代码编辑器、数据库工具等。"
-        keywords="Qt作品, 跨平台应用, 桌面软件, C++开发, Qt6, Qt5"
+        description="桌面应用与 Web 工具作品集，包括文件管理器、代码编辑器、数据库工具、吉他谱跟随工具等。"
+        keywords="Qt作品, 跨平台应用, 桌面软件, C++开发, Qt6, Qt5, Tauri, 吉他工具, Web应用"
       />
       <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
       <header className="text-center mb-12">
@@ -73,13 +73,13 @@ function Works() {
             : 'bg-gradient-to-r from-primary-500/30 to-secondary/30 text-primary-300 border border-primary-500/40'
         }`}>
           <span className="iconify flex-shrink-0" data-icon="lucide:briefcase" style={{ fontSize: '16px' }} aria-hidden="true"></span>
-          <span>Qt 应用程序作品集</span>
+          <span>应用作品集</span>
         </div>
         <h1 id="works-title" className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
           我的作品
         </h1>
         <p className="text-lg opacity-70 max-w-2xl mx-auto">
-          使用 Qt 框架开发的跨平台桌面应用程序
+          桌面应用与 Web 工具作品集
         </p>
       </header>
       
