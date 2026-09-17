@@ -515,6 +515,32 @@ function WorkDetail() {
             <p className="text-sm opacity-50 mt-1">请稍后查看或联系开发者</p>
           </div>
         )}
+
+        {/* 附加资源包（可选字段：downloads.resources，如悟空的动作资源包） */}
+        {downloads.resources && (
+          <div className={`mt-4 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 border ${theme === 'light' ? 'bg-white/40 border-gray-200' : 'bg-white/5 border-white/10'}`}>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium break-words">
+                必装资源包：{downloads.resources.filename}
+                <span className="text-xs opacity-60 ml-2">({downloads.resources.size})</span>
+              </p>
+              {downloads.resources.note && (
+                <p className="text-sm opacity-60 mt-1 break-words">{downloads.resources.note}</p>
+              )}
+            </div>
+            <a
+              href={downloads.resources.url}
+              className={`flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-colors ${
+                theme === 'light'
+                  ? 'bg-white/70 hover:bg-white/90 text-gray-800'
+                  : 'bg-white/10 hover:bg-white/20 text-gray-200'
+              }`}
+            >
+              <span className="iconify flex-shrink-0" data-icon="mdi:package-variant-closed" style={{ fontSize: '18px' }} aria-hidden="true"></span>
+              <span className="text-sm">下载资源包</span>
+            </a>
+          </div>
+        )}
       </section>
 
       {/* 功能特性 */}
