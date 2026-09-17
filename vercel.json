@@ -43,6 +43,15 @@
       ]
     },
     {
+      "source": "/works/wukong/version.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/tabpilot/vendor/(.*)",
       "headers": [
         {

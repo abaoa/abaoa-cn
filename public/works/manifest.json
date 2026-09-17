@@ -91,7 +91,25 @@
         "Web"
       ],
       "latestVersion": "1.0.0",
-      "coverImage": "/works/tabpilot/cover.png"
+      "coverImage": "/works/tabpilot/cover.jpg"
+    },
+    {
+      "id": 6,
+      "slug": "wukong",
+      "title": "悟空 · 桌面伴侣",
+      "description": "动态壁纸 + 桌面陪伴。天气应景的海岸山村水墨场景、节气节日彩蛋、旅行打卡、AI 助手，纯本地渲染。",
+      "icon": "simple-icons:qt",
+      "tags": [
+        "Qt6",
+        "C++",
+        "动态壁纸",
+        "AI"
+      ],
+      "platforms": [
+        "Windows"
+      ],
+      "latestVersion": "1.0.0",
+      "coverImage": "/works/wukong/cover.jpg"
     }
   ]
 }
