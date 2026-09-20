@@ -634,6 +634,214 @@ input[type='range'] {
   text-decoration: underline;
 }
 
+/* ------------------------------------------------- 模态框与统计面板（两模式共用）
+ * 复盘弹窗、练习记录弹窗、演奏统计卡片——谱面模式与图片谱模式共用同一套观感。
+ * 原先这些规则分散在 index.html / image-tab.html 的内联 <style> 里各写一遍，
+ * 既重复又容易两处不同步；统一收到这里，单源维护，也顺手把硬编码兜底换成令牌。
+ * 注意：所有颜色都走 base.css 令牌，不要写死，否则深色主题会漏改。 */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 18, 24, .5);
+  padding: 20px;
+}
+
+.modal-card {
+  width: min(600px, 100%);
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .3);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.modal-head b {
+  flex: 1 1 auto;
+  font-size: 15px;
+}
+
+.modal-head .x {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.pm-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.pm-stat {
+  flex: 1 1 110px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--line);
+  text-align: center;
+}
+
+.pm-stat b {
+  display: block;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-stat span {
+  font-size: 11.5px;
+  color: var(--sub);
+}
+
+/* 练习记录：近 7 天柱状图 */
+.pm-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 92px;
+  margin-bottom: 6px;
+}
+
+.pm-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.pm-col .bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--brand);
+}
+
+.pm-col .lb {
+  font-size: 10.5px;
+  color: var(--sub);
+}
+
+.pm-col .vv {
+  font-size: 10px;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-sub {
+  font-size: 12px;
+  color: var(--sub);
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+
+.pm-list {
+  max-height: 190px;
+  overflow: auto;
+  margin-bottom: 12px;
+}
+
+.pm-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 2px;
+  border-bottom: 1px dashed var(--line);
+  font-size: 12.5px;
+}
+
+.pm-row .dt {
+  flex: 0 0 auto;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-row .du {
+  font-weight: 700;
+}
+
+.pm-row .ex {
+  flex: 1 1 auto;
+  color: var(--sub);
+}
+
+.pm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* 复盘：每拍偏差条（上=拖拍，下=抢拍，灰=漏弹） */
+.rv-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 108px;
+  margin: 4px 0 6px;
+  padding: 6px 4px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.rv-col {
+  position: relative;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 100%;
+}
+
+.rv-col i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+  min-height: 2px;
+}
+
+.rv-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--line);
+  opacity: .9;
+}
+
+.rv-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--sub);
+}
+
+.rv-legend s {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-right: 3px;
+}
+
 /* ------------------------------------------------------------------ 响应式 */
 @media (max-width: 900px) {
   .btn {
@@ -668,5 +876,15 @@ input[type='range'] {
   /* 窄屏隐藏非关键控件（缩放滑杆、行列表按钮等） */
   .only-wide {
     display: none !important;
+  }
+
+  /* 窄屏下弹窗更贴边、更省空间（复盘 / 练习记录两模式共用） */
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-card {
+    padding: 13px 13px 15px;
+    border-radius: 12px;
   }
 }

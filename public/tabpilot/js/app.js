@@ -80,6 +80,14 @@ let micGate = -72;
 let hlEl = null;
 /** 放大镜开关 */
 let magOn = false;
+/** 谱面播放（发声）引擎实例 */
+let playerInst = null;
+/** 是否正在播放（区别于「暂停」：暂停时 playerInst 仍在，只是不走时钟） */
+let playing = false;
+/** 播放时叠加节拍器 */
+let metroOn = false;
+/** 只听伴奏：静音主音轨，留鼓/贝斯/和弦 */
+let backing = false;
 /** 移调半音数（-12 – +12），0 = 原调 */
 let transpose = 0;
 /** 变调夹品数（0 – 11），0 = 无夹。夹上后实际发声比谱面高 capo 半音，但显示指法不变 */
@@ -133,6 +141,7 @@ function playheadMs() {
   if (engine && (engine.name === 'mic' || engine.name === 'sim') && typeof engine.idx === 'function') {
     return ref.times[engine.idx()] || 0;
   }
+  if (engine && engine.name === 'player' && playerInst) return playerInst.timeMs();
   return 0;
 }
 
@@ -191,6 +200,9 @@ function initTab() {
   api.scoreLoaded.on((score) => {
     buildReference(score);
     updateTransposeUI();
+    applyMetro();                      // 换谱后音轨变了，静音状态要重新施加
+    applyBacking();
+    updatePlayChip(0);
   });
 
   // 点击谱面重定位：跟随模式下直接跳到被点击的那一拍
@@ -389,11 +401,18 @@ function cosine(a, b) {
 
 /* ------------------------------------------------------ 高亮 / 滚动 / 放大镜 */
 
-/** 高亮第 i 拍并更新状态栏与放大镜 */
-function highlightIndex(i) {
+/**
+ * 高亮第 i 拍并更新状态栏与放大镜
+ * @param {number} i 拍号
+ * @param {boolean} [skipTick] 为真时不回写 api.tickPosition。
+ *   播放中必须跳过——音频正按自己的时钟推进，回写 tick 会把播放头硬拽回这一拍。
+ */
+function highlightIndex(i, skipTick) {
   const b = ref.beats[i];
   if (!b || !api) return;
-  try { api.tickPosition = b._tick; } catch (e) { /* 某些状态下不可设置，忽略 */ }
+  if (!skipTick) {
+    try { api.tickPosition = b._tick; } catch (e) { /* 某些状态下不可设置，忽略 */ }
+  }
 
   let bar = '-';
   if (ref.barCount) bar = String(b._mbIndex + 1) + ' / ' + ref.barCount;
@@ -588,6 +607,278 @@ class Walker {
     if (this.raf) cancelAnimationFrame(this.raf);
     if (this.timer) clearInterval(this.timer);
   }
+}
+
+/* -------------------------------------------- 引擎 4：谱面播放（alphaTab 音源） */
+
+/** 播放轮询间隔(ms)：40ms 足够跟手，又不至于空转 */
+const PLAY_POLL = 40;
+/** tick 连续多少拍没动就认为播完了（40ms × 75 ≈ 3s，给足音色库加载的等待） */
+const PLAY_STALL = 75;
+
+/**
+ * 谱面播放：调 alphaTab 自带播放器发声，并按它的 tick 驱动高亮与和弦跟随。
+ * 与 Walker 的区别——Walker 自己算时间（静音滚动），Player 的时间由音频给。
+ */
+class Player {
+  /** @param {number} rate 播放倍速 */
+  constructor(rate) {
+    this.rate = window.PlayerCore.clampSpeed(rate);
+    this.lastIdx = -1;
+    this.timer = null;
+    this.ticks = [];
+    this.stall = 0;
+    this.lastTick = -1;
+  }
+
+  /** 快照「拍时间 ↔ 拍 tick」对应表（换谱后会重新 start，所以每次都重取） */
+  snapshot() {
+    this.ticks = window.PlayerCore.beatTicks(ref.beats);
+  }
+
+  /** 当前 tick */
+  tick() {
+    return api ? (api.tickPosition || 0) : 0;
+  }
+
+  /** 当前音乐时间(ms) */
+  timeMs() {
+    return window.PlayerCore.timeAtTick(ref.times, this.ticks, this.tick());
+  }
+
+  /** 总时长(ms)：优先用 alphaTab 给的，拿不到就用最后一拍的时间 */
+  totalMs() {
+    if (api && typeof api.duration === 'number' && api.duration > 0) return api.duration;
+    return ref.times.length ? ref.times[ref.times.length - 1] : 0;
+  }
+
+  start() {
+    this.snapshot();
+    this.stall = 0;
+    this.lastTick = -1;
+    applyPlaybackSpeed(this.rate);
+
+    const loop = () => {
+      if (!api) return;
+      let t = this.tick();
+
+      // A/B 循环：越过终点就跳回起点
+      if (isLooping()) {
+        const ta = window.PlayerCore.tickAtTime(ref.times, this.ticks, loopA);
+        const tb = window.PlayerCore.tickAtTime(ref.times, this.ticks, loopB);
+        if (window.PlayerCore.shouldWrap(t, ta, tb)) {
+          loopCount++;
+          if (loopStopAfter > 0 && loopCount >= loopStopAfter) {
+            stopEngine();
+            setHint('已循环 ' + loopCount + ' 次，自动停止。');
+            return;
+          }
+          try { api.tickPosition = ta; } catch (e) { /* 忽略 */ }
+          t = ta;
+          this.lastIdx = -1;
+        }
+      }
+
+      const i = window.PlayerCore.beatIndexAtTick(this.ticks, t);
+      if (i >= 0 && i !== this.lastIdx && ref.beats.length) {
+        this.lastIdx = i;
+        highlightIndex(i, true);
+      }
+
+      // 播完收尾：tick 一直不动就当结束（到尾停下、或音源异常静默都覆盖）
+      if (t !== this.lastTick) {
+        this.lastTick = t;
+        this.stall = 0;
+      } else {
+        this.stall++;
+        if (this.stall > PLAY_STALL) { playerFinish(); return; }
+      }
+
+      updatePlayChip(this.timeMs());
+    };
+
+    this.timer = setInterval(loop, PLAY_POLL);
+    loop();
+  }
+
+  /** 变速：alphaTab 合成器超出 0.25~2 会失真，交给 clamp 兜住 */
+  setRate(r) {
+    this.rate = window.PlayerCore.clampSpeed(r);
+    applyPlaybackSpeed(this.rate);
+  }
+
+  /** 跳转到第 i 拍：这里要真的移动播放头，所以允许回写 tick */
+  seek(i) {
+    if (!ref.times.length) return;
+    i = Math.max(0, Math.min(ref.times.length - 1, i));
+    this.stall = 0;
+    try { api.tickPosition = ref.beats[i] ? ref.beats[i]._tick : 0; } catch (e) { /* 忽略 */ }
+    this.lastIdx = i;
+    highlightIndex(i);
+    updatePlayChip(this.timeMs());
+  }
+
+  stop() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+  }
+}
+
+/**
+ * 写入播放倍速。不同 alphaTab 版本暴露的位置不一样：
+ * 新版本有 api.playbackSpeed 快捷属性，老版本只能改 settings 后 updateSettings。
+ * 先试快捷属性，读回来不对再走设置项——避免「静默按原速播」这种最难查的失效。
+ * @param {number} v 倍速（已 clamp）
+ */
+function applyPlaybackSpeed(v) {
+  if (!api) return;
+  try {
+    api.playbackSpeed = v;
+    if (api.playbackSpeed === v) return;
+    if (api.settings && api.settings.player) {
+      api.settings.player.playbackSpeed = v;
+      if (api.updateSettings) api.updateSettings();
+    }
+  } catch (e) { /* 都不支持就按原速播，不影响跟随 */ }
+}
+
+/** 启动/继续播放；已在播放则暂停 */
+function runPlayer() {
+  if (!api) { setHint('谱面尚未就绪，请稍候'); return; }
+  if (!ref.beats.length) { setHint('谱面尚未就绪，请稍候'); return; }
+
+  if (engine && engine.name === 'player') {
+    if (playing) playerPause();
+    else playerResume();
+    return;
+  }
+  // 麦克风/模拟跟随时放音乐会被自己听到，音高识别直接崩，拦下来
+  if (engine && (engine.name === 'mic' || engine.name === 'sim')) {
+    setLed('bad', '跟随时不能播放');
+    setHint('麦克风/模拟跟随会听到播放声，音高就认不准了。先「⏹ 停止」再播放。');
+    return;
+  }
+
+  stopEngine();                       // 接管时间：停掉 BPM 滚动，改由音频驱动
+  playerInst = new Player(($('rate').value || 100) / 100);
+  engine = {
+    name: 'player',
+    stop: () => playerHalt(),
+    setRate: (r) => playerInst && playerInst.setRate(r),
+    seek: (i) => playerInst && playerInst.seek(i),
+    idx: () => (playerInst ? Math.max(0, playerInst.lastIdx) : 0),
+  };
+  playing = true;
+  try {
+    api.play();
+  } catch (e) {
+    playing = false;
+    playerInst = null;
+    engine = null;
+    setLed('bad', '播放失败');
+    setHint('播放失败：' + (e && e.message ? e.message : e));
+    syncPlayUI();
+    return;
+  }
+  setLed('ok', '播放中');
+  setHint('正在发声：谱里有什么轨就响什么（旋律 / 鼓 / 贝斯 / 和弦）。点「🎧 伴奏」可把主音轨静音，跟着弹。');
+  syncButtons(null);
+  syncPlayUI();
+  playerInst.start();
+}
+
+/** 暂停：停掉轮询，音频停在当前位置 */
+function playerPause() {
+  if (api) { try { api.pause(); } catch (e) { /* 忽略 */ } }
+  playing = false;
+  if (playerInst) playerInst.stop();
+  syncPlayUI();
+  setLed('warn', '已暂停');
+}
+
+/** 继续：重新起轮询 */
+function playerResume() {
+  if (!playerInst) { playerInst = new Player(($('rate').value || 100) / 100); }
+  playing = true;
+  try { api.play(); } catch (e) { /* 已在播放时会抛，忽略 */ }
+  syncPlayUI();
+  setLed('ok', '播放中');
+  playerInst.start();
+}
+
+/** 收尾：停止音频、清除引擎、复位 UI（engine.stop / 播完/用户停止都走这里） */
+function playerHalt() {
+  if (api) { try { api.stop(); } catch (e) { /* 忽略 */ } }
+  playing = false;
+  if (playerInst) { playerInst.stop(); playerInst = null; }
+  syncPlayUI();
+  const chip = $('playChip');
+  if (chip) chip.style.display = 'none';
+}
+
+/** 播完一曲 */
+function playerFinish() {
+  playerHalt();
+  engine = null;
+  setLed('', '播放结束');
+}
+
+/** 回到开头 */
+function playerRewind() {
+  if (!api) return;
+  try { api.tickPosition = 0; } catch (e) { /* 忽略 */ }
+  if (playerInst) playerInst.seek(0);
+  else highlightIndex(0);
+  updatePlayChip(0);
+}
+
+/** 刷新播放按钮文案与选中态 */
+function syncPlayUI() {
+  const b = $('btnPlay');
+  if (!b) return;
+  b.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+  b.classList.toggle('active', playing);
+}
+
+/** 刷新进度 chip：0:12 / 2:30 */
+function updatePlayChip(ms) {
+  const chip = $('playChip');
+  const el = $('playTime');
+  if (!chip || !el) return;
+  chip.style.display = '';
+  const total = playerInst ? playerInst.totalMs()
+    : (ref.times.length ? ref.times[ref.times.length - 1] : 0);
+  el.textContent = window.PlayerCore.fmtTime(ms) + ' / ' + window.PlayerCore.fmtTime(total);
+}
+
+/** 节拍器开关写进 alphaTab（音量 0~1，0 即关闭） */
+function applyMetro() {
+  if (!api) return;
+  try { api.metronomeVolume = metroOn ? 0.8 : 0; } catch (e) { /* 老版本无该属性 */ }
+}
+
+/** 只听伴奏：静音主音轨，留下鼓/贝斯/和弦 */
+function applyBacking() {
+  if (!api) return;
+  const btn = $('btnBacking');
+  const tracks = (api.tracks && api.tracks.length) ? api.tracks
+    : (api.score && api.score.tracks ? api.score.tracks : []);
+  const pick = window.PlayerCore.pickBackingMutes(tracks);
+  if (pick.reason !== 'ok') {
+    backing = false;
+    if (btn) btn.classList.remove('active');
+    return;
+  }
+  const targets = pick.indexes.map((i) => tracks[i]).filter(Boolean);
+  try {
+    api.changeTrackMute(targets, backing);
+  } catch (e) {
+    backing = false;
+    if (btn) btn.classList.remove('active');
+    setHint('这个版本的 alphaTab 不支持分轨静音，伴奏模式没生效。');
+    return;
+  }
+  if (btn) btn.classList.toggle('active', backing);
 }
 
 /* --------------------------------------------------------------- 麦克风音源 */
@@ -1407,6 +1698,29 @@ function bindUI() {
   $('rate').oninput = (e) => window.TPSettings.set('rate', parseInt(e.target.value, 10));
   $('gate').oninput = (e) => window.TPSettings.set('gate', parseInt(e.target.value, 10));
   $('zoom').oninput = (e) => window.TPSettings.set('zoom', parseInt(e.target.value, 10));
+
+  /* ---------------------------------------------------- 声音（谱面播放） */
+  metroOn = !!window.TPSettings.get('metro');
+  backing = !!window.TPSettings.get('backing');
+  $('btnMetro').classList.toggle('active', metroOn);
+  $('btnBacking').classList.toggle('active', backing);
+  syncPlayUI();
+
+  $('btnPlay').onclick = runPlayer;
+  $('btnPlayRewind').onclick = playerRewind;
+  $('btnMetro').onclick = () => {
+    metroOn = !metroOn;
+    window.TPSettings.set('metro', metroOn ? 1 : 0);
+    $('btnMetro').classList.toggle('active', metroOn);
+    applyMetro();
+    setHint(metroOn ? '节拍器已开：播放时会跟着打点' : '节拍器已关');
+  };
+  $('btnBacking').onclick = () => {
+    backing = !backing;
+    window.TPSettings.set('backing', backing ? 1 : 0);
+    applyBacking();
+    setHint(backing ? '已静音主音轨，只留伴奏。再点一次恢复。' : '已恢复全部音轨');
+  };
 }
 
 /**
@@ -1417,7 +1731,9 @@ function applySettings(s) {
   // 速度
   $('rate').value = s.rate;
   $('rateVal').textContent = (s.rate / 100).toFixed(1) + 'x';
-  if (engine && engine.name === 'walker' && engine.setRate) engine.setRate(s.rate / 100);
+  if (engine && engine.setRate && (engine.name === 'walker' || engine.name === 'player')) {
+    engine.setRate(s.rate / 100);      // 播放倍速与 BPM 滚动共用同一个滑杆
+  }
 
   // 麦克风噪声门
   micGate = s.gate;
@@ -1461,4 +1777,15 @@ window.addEventListener('DOMContentLoaded', () => {
   bindUI();
   initTab();
   applySettings(window.TPSettings.all());
+});
+
+/* 曲库：从 ?blob=/?name= 直接打开结构化谱（.gp / MusicXML / MIDI） */
+window.addEventListener('DOMContentLoaded', function () {
+  var q = new URLSearchParams(location.search);
+  var b = q.get('blob');
+  if (!b) return;
+  fetch(b).then(function (r) { return r.blob(); }).then(function (blob) {
+    var f = new File([blob], q.get('name') || 'score', { type: blob.type || 'application/octet-stream' });
+    importFile(f);
+  }).catch(function (e) { console.error('曲库打开失败', e); });
 });

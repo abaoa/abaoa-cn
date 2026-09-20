@@ -12,12 +12,39 @@
 'use strict';
 
 /** 缓存版本号：改动外壳资源时必须递增 */
-const CACHE = 'tabpilot-v16';
+const CACHE = 'tabpilot-v39';
 
 /** 应用外壳：离线运行所需的最小资源集合 */
 const SHELL = [
   'index.html',
   'image-tab.html',
+  'tuner.html',
+  'js/tuner.js',
+  'scales.html',
+  'js/scales.js',
+  'chordfinder.html',
+  'js/chordfinder.js',
+  'eargame.html',
+  'js/eargame.js',
+  'practice.html',
+  'js/practice.js',
+  'tempo.html',
+  'js/tempo.js',
+  'progression.html',
+  'js/progression.js',
+  'chords.html',
+  'js/chords.js',
+  'sheet.html',
+  'js/sheet.js',
+  'library.html',
+  'js/library.js',
+  'find.html',
+  'js/find.js',
+  'setlist.html',
+  'js/setlist.js',
+  'metronome.html',
+  'js/metronome.js',
+  'js/music-core.js',
   'css/base.css',
   'css/layout.css',
   'css/components.css',
@@ -28,6 +55,10 @@ const SHELL = [
   'js/chord-core.js',
   'js/timing-core.js',
   'js/barline-core.js',
+  'js/player-core.js',
+  'js/tab-core.js',
+  'js/calib-core.js',
+  'js/diag-core.js',
   'manifest.json',
   'icons/icon-512.png',
   'assets/demo-xihn.jpg',

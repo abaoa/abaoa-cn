@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!--
+  ==========================================================================
+  eargame.html — 练耳小游戏（Ear Training）
+  跨模式通用工具：谱面模式 / 图片谱模式都能从顶栏「👂 练耳」进入。
+  三种模式：音程识别 / 和弦识别 / 单音辨音，Web Audio 出题，多选作答，统计连对与正确率。
+  ========================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f6fed" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141b" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-512.png">
+<title>谱领航 TabPilot · 练耳小游戏</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<script src="js/theme.js"></script>
+<style>
+  main.app-main {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 14px; padding: 18px; overflow: auto;
+  }
+  .wrap { width: min(560px, 100%); display: flex; flex-direction: column; gap: 14px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-lg, 16px); padding: 18px;
+    box-shadow: var(--sh-1, 0 8px 24px rgba(0,0,0,.12));
+    text-align: center;
+  }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .mode-sel { display: flex; gap: 6px; }
+  .seg { display: inline-flex; background: var(--sunken); border-radius: var(--r-pill); padding: 3px; }
+  .seg button {
+    border: none; background: transparent; color: var(--sub); font-weight: 700; font-size: 13px;
+    padding: 6px 14px; border-radius: var(--r-pill); cursor: pointer; transition: all .15s;
+  }
+  .seg button.on { background: var(--card); color: var(--brand); box-shadow: var(--sh-1); }
+
+  .stats { display: flex; gap: 18px; justify-content: center; font-variant-numeric: tabular-nums; }
+  .stat { display: flex; flex-direction: column; align-items: center; }
+  .stat b { font-size: 22px; color: var(--ink); }
+  .stat span { font-size: 11px; color: var(--sub); }
+
+  .play-btn {
+    width: 92px; height: 92px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--brand); color: #fff; font-size: 30px; margin: 6px auto 2px;
+    box-shadow: 0 6px 18px rgba(47,111,237,.35); transition: transform .1s;
+  }
+  .play-btn:active { transform: scale(.94); }
+  .play-hint { font-size: 12px; color: var(--sub); margin-bottom: 6px; }
+
+  .answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 9px; }
+  .ans {
+    padding: 12px 8px; border: 1px solid var(--line); border-radius: 11px; background: var(--card);
+    color: var(--ink); font-weight: 700; font-size: 14px; cursor: pointer; transition: all .12s; min-height: 46px;
+  }
+  .ans:hover { border-color: var(--brand); }
+  .ans.correct { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .ans.wrong { background: var(--risk, #d23); border-color: var(--risk, #d23); color: #fff; }
+  .ans:disabled { cursor: default; }
+
+  .feedback { min-height: 22px; font-size: 14px; font-weight: 700; }
+  .feedback.ok { color: var(--ok); }
+  .feedback.no { color: var(--risk, #d23); }
+  .row { display: flex; gap: 8px; justify-content: center; }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="topbar">
+    <div class="brand">🎸 谱领航 <span class="tag">TabPilot</span></div>
+
+    <nav class="tabs">
+      <a href="index.html">🎼 谱面模式</a>
+      <a href="image-tab.html">🖼 图片谱模式</a>
+      <a href="tuner.html">🎛 调音</a>
+      <a href="scales.html">🎯 音阶</a>
+      <a href="chordfinder.html">🎹 和弦</a>
+      <span class="on">👂 练耳</span>
+      <a href="practice.html">📅 练习</a>
+      <a href="tempo.html">⏩ 提速</a>
+      <a href="metronome.html">🎚 节拍器</a>
+      <a href="progression.html">🎶 进行</a>
+      <a href="chords.html">🎸 指法</a>
+      <a href="sheet.html">📝 和弦谱</a>
+      <a href="library.html">📚 曲库</a>
+      <a href="find.html">🔎 找谱</a>
+    <a href="setlist.html">🎵 歌单</a>
+    </nav>
+
+    <div class="spacer"></div>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="wrap">
+    <div class="panel">
+      <div class="top">
+        <div class="seg" id="modeSeg">
+          <button data-mode="interval" class="on">音程</button>
+          <button data-mode="chord">和弦</button>
+          <button data-mode="single">单音</button>
+        </div>
+      </div>
+      <div class="stats" style="margin-top:12px;">
+        <div class="stat"><b id="stStreak">0</b><span>连对</span></div>
+        <div class="stat"><b id="stRate">—</b><span>正确率</span></div>
+        <div class="stat"><b id="stTotal">0</b><span>已答</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <button class="play-btn" id="btnPlay" title="播放题目">▶</button>
+      <div class="play-hint" id="playHint">点击播放题目音</div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn sm" id="btnReplay">🔁 重听</button>
+        <button class="btn sm" id="btnNext" style="display:none;">下一题 →</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/music-core.js"></script>
+<script src="js/eargame.js"></script>
+</body>
+</html>

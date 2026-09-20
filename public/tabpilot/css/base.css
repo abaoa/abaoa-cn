@@ -37,6 +37,10 @@
   /* 背景与描边 */
   --bg: #eff2f7;
   --card: #ffffff;
+  /* 浮层表面（下拉菜单 / 模态框 / 分段选中 / 列表项）= 卡片同色，
+     抽成独立令牌是为「浮层在浅/深主题下都该跟随卡片」这一语义，
+     避免各处直接写 var(--card, #fff)、深色下又漏改。 */
+  --panel: #ffffff;
   --sunken: #f5f7fa;
   --paper: #ffffff;
   --line: #e4e8ef;
@@ -77,6 +81,7 @@
 
   --bg: #10141b;
   --card: #171c25;
+  --panel: #171c25;
   --sunken: #12171f;
   --paper: #f6f7f9;
   --line: #2a3140;

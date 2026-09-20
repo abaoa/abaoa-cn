@@ -22,7 +22,7 @@ window.TPSettings = (function () {
   /** localStorage 键名 */
   var STORAGE_KEY = 'tabpilot.settings.v1';
   /** 应用版本号（同步维护：package.json / tauri.conf.json / 此处） */
-  var APP_VERSION = '1.0.0';
+  var APP_VERSION = '1.0.2';
   /** 项目主页 */
   var APP_REPO = 'https://github.com/abaoa/TabPilot';
 

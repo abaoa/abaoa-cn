@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f6fed" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141b" media="(prefers-color-scheme: dark)">
+<title>谱领航 TabPilot · 和弦谱</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="topbar">
+    <div class="brand">🎸 谱领航 <span class="tag">TabPilot</span></div>
+
+    <nav class="tabs">
+      <a href="index.html">🎼 谱面模式</a>
+      <a href="image-tab.html">🖼 图片谱模式</a>
+      <a href="tuner.html">🎛 调音</a>
+      <a href="scales.html">🎯 音阶</a>
+      <a href="chordfinder.html">🎹 和弦</a>
+      <a href="eargame.html">👂 练耳</a>
+      <a href="practice.html">📅 练习</a>
+      <a href="tempo.html">⏩ 提速</a>
+      <a href="metronome.html">🎚 节拍器</a>
+      <a href="progression.html">🎶 进行</a>
+      <a href="chords.html">🎸 指法</a>
+      <a href="sheet.html">📝 和弦谱</a>
+      <a href="library.html">📚 曲库</a>
+      <a href="find.html">🔎 找谱</a>
+    <a href="setlist.html">🎵 歌单</a>
+    </nav>
+
+    <div class="spacer"></div>
+    <span class="app-ver">v1.0.0</span>
+  </div>
+</header>
+
+<main class="app-main" style="padding:18px;align-items:stretch">
+  <section class="panel" style="max-width:980px;margin:0 auto;width:100%">
+    <h2 style="margin:0 0 4px">📝 和弦谱查看器</h2>
+    <p class="pm-sub">把带和弦的歌词谱粘进来，自动把和弦对齐到歌词上方，适合架上平板/手机跟唱跟弹。支持转调、自动滚动跟练，点任意和弦可试听并看指法。</p>
+
+    <div class="group" style="flex-wrap:wrap;gap:10px;margin:14px 0 10px">
+      <span class="glabel">格式</span>
+      <select id="mode" class="sel" aria-label="谱面格式">
+        <option value="inline">行内 [和弦]歌词</option>
+        <option value="paired">和弦/歌词 对行</option>
+      </select>
+      <button class="btn sm" id="btnSample">📋 示例</button>
+      <button class="btn sm" id="btnClear">🧹 清空</button>
+      <button class="btn sm" id="btnRender">▶ 渲染</button>
+    </div>
+
+    <textarea id="src" class="sheet-src" spellcheck="false" placeholder="在此粘贴和弦谱…&#10;行内格式示例：[C]Twinkle [G]twinkle [Am]little [F]star"></textarea>
+
+    <div class="group" style="flex-wrap:wrap;gap:14px;align-items:center;margin:12px 0 4px">
+      <span class="glabel">转调</span>
+      <button class="btn sm" id="btnDown">− 半音</button>
+      <span id="transLabel" class="tag" style="min-width:74px;text-align:center">原调 ±0</span>
+      <button class="btn sm" id="btnUp">+ 半音</button>
+      <label class="glabel" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="useFlats"> 用 ♭ 记号
+      </label>
+      <span class="spacer"></span>
+      <span class="glabel">自动滚动</span>
+      <input type="range" id="speed" min="10" max="90" value="40" step="5" style="width:120px">
+      <button class="btn sm" id="btnScroll">▶ 跟练</button>
+      <span class="spacer"></span>
+      <button class="btn sm" id="btnImg">🖼 导出图片</button>
+      <button class="btn sm" id="btnCopy">📋 复制文本</button>
+      <button class="btn sm" id="btnPdf">📄 导出 PDF</button>
+    </div>
+
+    <div id="printHead" class="print-head">和弦谱 · <span id="printKey"></span></div>
+    <div id="view" class="sheet-view"></div>
+    <p class="pm-sub" id="emptyHint" style="margin-top:10px">渲染后这里显示对齐好的和弦谱。点任意蓝色和弦可试听、并跳到指法库看把位。</p>
+  </section>
+</main>
+
+<!-- 和弦弹窗 -->
+<div id="pop" class="chord-pop" style="display:none">
+  <div class="cp-name" id="cpName">C</div>
+  <div class="cp-notes" id="cpNotes"></div>
+  <div class="cp-btns">
+    <button class="btn sm" id="cpPlay">🔊 试听</button>
+    <a class="btn sm" id="cpLink" href="chords.html">🎸 看指法</a>
+  </div>
+</div>
+
+<style>
+  .sheet-src { width:100%;min-height:120px;resize:vertical;background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;line-height:1.6;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .sheet-view { position:relative;margin-top:14px;max-height:54vh;overflow:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    box-shadow:var(--sh-1); }
+  .sheet-view.scrolling { scroll-behavior:auto; }
+  .sheet-line { display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 14px;margin:0 0 18px; }
+  .beat { display:flex;flex-direction:column;align-items:flex-start;min-width:14px; }
+  .chord { color:var(--brand-strong);font-weight:800;font-size:16px;line-height:1.1;cursor:pointer;
+    padding:1px 4px;border-radius:7px;white-space:nowrap; }
+  .chord:hover { background:var(--brand-soft); }
+  .lyric { color:var(--ink);font-size:21px;line-height:1.35;white-space:pre-wrap; }
+  .sheet-space { width:10px; }
+  .chord-pop { position:fixed;z-index:50;background:var(--panel);border:1px solid var(--brand);
+    border-radius:14px;padding:12px 14px;box-shadow:var(--sh-1);min-width:150px; }
+  .chord-pop .cp-name { font-size:24px;font-weight:800;color:var(--brand-strong); }
+  .chord-pop .cp-notes { font-size:13px;color:var(--sub);margin:4px 0 8px; }
+  .chord-pop .cp-btns { display:flex;gap:8px; }
+  .chord-pop .cp-btns .btn { text-decoration:none; }
+  .print-head { display:none; }
+  @media (max-width:900px){
+    .sheet-view { max-height:48vh; }
+    .lyric { font-size:19px; }
+  }
+  @media print {
+    @page { margin: 14mm; }
+    body { background:#fff !important; }
+    .app-header, .group, .sheet-src, #emptyHint, .chord-pop, .pm-sub, p.pm-sub { display:none !important; }
+    main.app-main { padding:0 !important; display:block !important; }
+    section.panel { max-width:none !important; width:100% !important; margin:0 !important; box-shadow:none !important; border:none !important; }
+    .print-head { display:block; font-size:13px; color:#000; margin:0 0 12px; font-weight:700; }
+    .sheet-view { max-height:none !important; overflow:visible !important; border:none !important; box-shadow:none !important; padding:0 !important; background:#fff !important; }
+    .sheet-line { break-inside:avoid; }
+    .chord { color:#000 !important; background:transparent !important; padding:0 !important; }
+    .lyric { color:#000 !important; }
+    h2 { font-size:18px; margin-bottom:10px !important; }
+  }
+</style>
+
+<script src="js/sheet.js"></script>
+</body>
+</html>

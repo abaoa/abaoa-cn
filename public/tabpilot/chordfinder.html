@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<!--
+  ==========================================================================
+  chordfinder.html — 和弦反查（Reverse Chord Finder）
+
+  跨模式通用工具：谱面模式 / 图片谱模式都能从顶栏「🎹 和弦」进入。
+  选择若干音（12 音级或直接点指板）→ 反查出和弦名称、给出候选与音构成，并试听。
+  ========================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f6fed" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141b" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-512.png">
+<title>谱领航 TabPilot · 和弦反查</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<script src="js/theme.js"></script>
+<style>
+  main.app-main {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 14px; padding: 18px; overflow: auto;
+  }
+  .wrap { width: min(820px, 100%); display: flex; flex-direction: column; gap: 14px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-lg, 16px); padding: 16px 18px;
+    box-shadow: var(--sh-1, 0 8px 24px rgba(0,0,0,.12));
+  }
+  .pc-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pc {
+    width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    font-weight: 700; font-size: 14px; transition: all .12s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pc:hover { border-color: var(--brand); }
+  .pc.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .board-card { overflow-x: auto; }
+  .board {
+    display: grid;
+    grid-template-columns: 26px repeat(var(--frets, 15), minmax(34px, 1fr));
+    gap: 0; min-width: 520px; margin: 0 auto; user-select: none;
+  }
+  .corner { }
+  .fretnum { text-align: center; font-size: 11px; color: var(--sub); padding: 4px 0 6px; font-variant-numeric: tabular-nums; position: relative; }
+  .fretnum.mark::after { content: ''; position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--sub); opacity: .5; }
+  .strlabel { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--sub); border-right: 2px solid var(--line-strong); }
+  .cell { position: relative; height: 36px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+  .cell.nut { border-left: 3px solid var(--ink); }
+  .cell .ghost { width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); opacity: .5; }
+  .dot { width: 27px; height: 27px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; cursor: pointer; background: var(--card); color: var(--sub); border: 1px solid var(--line); }
+  .dot.sel { background: var(--brand-soft); color: var(--brand-strong); border-color: var(--brand); }
+  .dot.sel.root { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+  .result { text-align: center; padding: 10px 0 4px; }
+  .result .big { font-size: 54px; font-weight: 800; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .result .big.unc { color: var(--warn); }
+  .result .sub2 { font-size: 13px; color: var(--sub); margin-top: 8px; }
+  .result .notes-line { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
+  .note-chip { min-width: 30px; text-align: center; padding: 4px 8px; border-radius: 9px; background: var(--brand-soft); color: var(--brand-strong); font-weight: 700; font-size: 13px; }
+  .note-chip.root { background: var(--brand); color: #fff; }
+
+  .cand { margin-top: 12px; }
+  .cand h3, .presets h3 { margin: 0 0 8px; font-size: 13px; color: var(--sub); font-weight: 700; }
+  .cand-row { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-top: 1px solid var(--line); font-size: 13px; }
+  .cand-row:first-of-type { border-top: none; }
+  .cand-row .nm { font-weight: 700; color: var(--ink); min-width: 64px; }
+  .cand-row.best .nm { color: var(--brand); }
+  .cand-row .bar { flex: 1; height: 8px; background: var(--sunken); border-radius: 99px; overflow: hidden; }
+  .cand-row .bar > i { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+  .cand-row .sc { font-variant-numeric: tabular-nums; color: var(--sub); min-width: 42px; text-align: right; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .toolbar2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .hint { font-size: 12px; color: var(--sub); line-height: 1.6; }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="topbar">
+    <div class="brand">🎸 谱领航 <span class="tag">TabPilot</span></div>
+
+    <nav class="tabs">
+      <a href="index.html">🎼 谱面模式</a>
+      <a href="image-tab.html">🖼 图片谱模式</a>
+      <a href="tuner.html">🎛 调音</a>
+      <a href="scales.html">🎯 音阶</a>
+      <span class="on">🎹 和弦</span>
+      <a href="eargame.html">👂 练耳</a>
+      <a href="practice.html">📅 练习</a>
+      <a href="tempo.html">⏩ 提速</a>
+      <a href="metronome.html">🎚 节拍器</a>
+      <a href="progression.html">🎶 进行</a>
+      <a href="chords.html">🎸 指法</a>
+      <a href="sheet.html">📝 和弦谱</a>
+      <a href="library.html">📚 曲库</a>
+      <a href="find.html">🔎 找谱</a>
+    <a href="setlist.html">🎵 歌单</a>
+    </nav>
+
+    <div class="spacer"></div>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="wrap">
+    <div class="panel">
+      <h3 style="margin:0 0 10px;font-size:13px;color:var(--sub);font-weight:700;">① 选择音（点 12 音级，或直接点下方指板）</h3>
+      <div class="pc-row" id="pcRow"></div>
+      <div class="toolbar2">
+        <button class="btn sm" id="btnHear">🔊 试听和弦</button>
+        <button class="btn sm" id="btnDiag">🎸 看指法</button>
+        <button class="btn sm" id="btnClear">🧹 清空</button>
+      </div>
+    </div>
+
+    <div class="panel board-card">
+      <div class="board" id="board"></div>
+      <div class="hint" style="margin-top:8px;">点指板格子可切换该音（同音级任意位置都生效）；再点一次取消。</div>
+    </div>
+
+    <div class="panel result" id="resultPanel">
+      <div class="big" id="chordName">—</div>
+      <div class="sub2" id="chordSub">选择 3 个及以上音开始反查</div>
+      <div class="notes-line" id="notesLine"></div>
+    </div>
+
+    <div class="panel">
+      <div class="cand">
+        <h3>候选和弦（按匹配度）</h3>
+        <div id="candList"></div>
+      </div>
+      <div class="presets" style="margin-top:14px;">
+        <h3 style="margin:0 8px 0 0;">快捷示例：</h3>
+        <button class="btn sm" data-preset="Cmaj">C</button>
+        <button class="btn sm" data-preset="Am">Am</button>
+        <button class="btn sm" data-preset="G">G</button>
+        <button class="btn sm" data-preset="Dm7">Dm7</button>
+        <button class="btn sm" data-preset="Cmaj7">Cmaj7</button>
+        <button class="btn sm" data-preset="Esus4">Esus4</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/music-core.js"></script>
+<script src="js/chord-core.js"></script>
+<script src="js/chordfinder.js"></script>
+</body>
+</html>

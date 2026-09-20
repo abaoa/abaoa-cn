@@ -39,6 +39,17 @@ let bands = [];
  */
 let pages = [];
 let curPage = 0;
+let dragFrom = -1;   // filmstrip 拖拽重排时的源页索引
+let countIn = false;        // 预备拍开关
+let countInTimer = null;    // 预备拍计时器（pending 时 playing 尚未开始）
+
+/** 歌单 / 连续练习队列：每项 { name, proj }，proj 为 buildProject() 序列化结果（含谱图 dataURL） */
+let setlist = [];
+let setlistIdx = -1;        // 当前正在播放的歌单项索引；-1 表示不在歌单播放中（手动加载不自动连播）
+let setlistAuto = false;    // 播完当前曲是否自动加载下一首
+/** Tap 敲速：最近若干次点击时刻（performance.now ms），用于按平均间隔反推 BPM */
+let tapTimes = [];
+let tapTimer = null;
 /** 文件导入模式：'replace' 清空后载入，'append' 追加到现有页之后 */
 let loadMode = 'replace';
 /** 手动框行模式与已点击的边界点 */
@@ -62,10 +73,12 @@ let curBar = -1;
 let zoomLevel = 1.0;
 /** 放大镜开关 */
 let magOn = true;
-/** 节拍器状态与音频上下文 */
+/** 节拍器（独立模式）状态与音频上下文：metro=true 时运行自洽打点循环，与跟随完全解耦，无谱也能响 */
 let metro = false;
 let ac = null;
-let lastBeat = -1;
+let metroTimer = null;   // 独立节拍器：setInterval 句柄（前瞻调度）
+let metroNext = 0;       // 下一拍的 AudioContext 计划时刻（秒）
+let metroBeat = 0;       // 节拍计数（取模判定重拍）
 /** 练习：A/B 区间循环 */
 let loopOn = false;
 let loopA = null;   // 循环起点（音乐时间 ms）
@@ -117,31 +130,108 @@ function esc(s) {
 
 /* ------------------------------------------------------------------ 节拍器 */
 
-/** 切换节拍器；首次开启时懒创建 AudioContext（浏览器要求用户手势后才能播放） */
+/** 切换独立节拍器：自洽打点循环，不需要加载谱面或开始跟随也能用（练琴数拍 / 定速） */
 $('btnMetro').onclick = () => {
   metro = !metro;
   $('btnMetro').classList.toggle('active', metro);
-  if (metro) {
-    if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
-    if (ac.state === 'suspended') ac.resume();
-  }
+  if (metro) startMetro(); else stopMetro();
 };
 
-/** 发出一声节拍点击；accent 为真时是重拍（更高更响） */
-function clickTick(accent) {
-  if (!metro || !ac) return;
+/** 切换预备拍（开始时先响 1 小节再进拍） */
+$('btnCountIn').onclick = () => {
+  countIn = !countIn;
+  $('btnCountIn').classList.toggle('active', countIn);
+};
+
+/** Tap 敲速：连续点击，按最近若干次的平均间隔反推 BPM 写入速度框 */
+$('btnTap').onclick = () => {
+  const now = performance.now();
+  // 超过 2 秒没点就清空重计（避免上次敲速的间隔混进来）
+  if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) tapTimes = [];
+  tapTimes.push(now);
+  if (tapTimes.length > 8) tapTimes.shift();   // 只取最近 8 拍，避免早期误差累积
+  if (tapTimes.length >= 2) {
+    let sum = 0;
+    for (let i = 1; i < tapTimes.length; i++) sum += tapTimes[i] - tapTimes[i - 1];
+    const avg = sum / (tapTimes.length - 1);
+    let bpm = Math.round(60000 / avg);
+    bpm = Math.max(30, Math.min(240, bpm));
+    $('bpm').value = bpm;
+    drawBands();   // 速度变了，重画行框 / 时间轴
+  }
+  setHint('敲速中…（已 ' + tapTimes.length + ' 拍，约 ' + $('bpm').value + ' BPM；停手 2 秒后清空重计）');
+  if (tapTimer) clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => { tapTimes = []; }, 2500);
+};
+
+/** 真正发出一声点击（不检查 metro 开关，供预备拍直接调用）；accent 为真时重拍；when 可指定未来时刻 */
+function emitClick(accent, when) {
+  if (!ac) return;
   try {
     const o = ac.createOscillator();
     const g = ac.createGain();
     o.frequency.value = accent ? 1200 : 750;
-    g.gain.setValueAtTime(0.0001, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(accent ? 0.45 : 0.28, ac.currentTime + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.07);
+    const t0 = (when != null) ? when : ac.currentTime;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(accent ? 0.45 : 0.28, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
     o.connect(g);
     g.connect(ac.destination);
-    o.start();
-    o.stop(ac.currentTime + 0.09);
+    o.start(t0);
+    o.stop(t0 + 0.09);
   } catch (e) { /* 音频被策略拦截：忽略，不影响跟随 */ }
+}
+
+/** 独立节拍器：前瞻调度器。每隔 25ms 检查一次，把未来 120ms 内的拍点用 AudioContext 精确定时排好，
+ *  既不受 setInterval 抖动影响，也完全独立于跟随时钟，可单独运行（无谱也能响）。BPM/拍号实时读取，改动即时生效。 */
+function metroScheduler() {
+  if (!ac) return;
+  const bpm = tabBpm();
+  const bpb = Math.max(1, tabBpb());
+  const beatSec = 60 / bpm;
+  // 标签页被节流后音频时钟已远超计划时刻：丢弃过期拍，避免一次性补放一串点击
+  if (metroNext < ac.currentTime - 0.25) metroNext = ac.currentTime + 0.05;
+  const ahead = ac.currentTime + 0.12;
+  while (metroNext < ahead) {
+    emitClick(metroBeat % bpb === 0, metroNext);   // 每小节首拍为重拍
+    metroBeat++;
+    metroNext += beatSec;
+  }
+}
+
+/** 启动独立节拍器 */
+function startMetro() {
+  const c = ensureAC();
+  if (!c) { metro = false; $('btnMetro').classList.remove('active'); return; }   // 无音频环境：回退
+  metroBeat = 0;
+  metroNext = ac.currentTime + 0.08;   // 略微延迟首拍，避免与点击同刻触发
+  metroScheduler();
+  metroTimer = setInterval(metroScheduler, 25);
+  setLed('ok', '节拍器');
+  setHint('节拍器运行中（' + tabBpm() + ' BPM，' + tabBpb() + ' 拍/小节）；改 BPM / 拍号即时生效');
+  $('btnMetro').textContent = '🔔 节拍器●';
+}
+
+/** 停止独立节拍器 */
+function stopMetro() {
+  if (metroTimer) { clearInterval(metroTimer); metroTimer = null; }
+  setLed('', '待机');
+  setHint('节拍器已停止');
+  $('btnMetro').textContent = '🔔 节拍器';
+}
+
+/** 预备拍：开始跟随时先响 n 拍（默认一个小节 = bpb 拍），给用户进拍缓冲，再回调 cb 正式开始。
+ *  预备拍发声独立于「节拍器」开关（本身就是打点），用 ensureAC 懒建音频上下文。 */
+function startCountIn(cb) {
+  const bpm = parseInt($('bpm').value, 10) || 60;
+  const beatMs = 60000 / bpm;
+  const n = Math.max(1, parseInt($('bpb').value, 10) || 4);
+  if (!ensureAC()) { cb(); return; }   // 无音频环境：跳过预备拍直接开始
+  countInTimer = setTimeout(() => { countInTimer = null; cb(); }, n * beatMs + 40);
+  setLed('warn', '预备拍…');
+  setHint('预备拍 ' + n + ' 拍（' + bpm + ' BPM），准备进拍');
+  $('btnPlay').textContent = '预备拍…';
+  for (let i = 0; i < n; i++) emitClick(i === 0, ac.currentTime + (i * beatMs) / 1000);
 }
 
 /* ---------------------------------------------------------------- 图片加载 */
@@ -219,6 +309,20 @@ function isImageFile(f) {
   return /^image\//i.test(f.type || '') || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(f.name || '');
 }
 
+/** 自然排序比较：'page2' < 'page10'，数字按数值而非纯字典序（避免 1/10/2 这种错排） */
+function naturalCompare(a, b) {
+  const ax = [], bx = [];
+  String(a || '').replace(/(\d+)|(\D+)/g, (_, n, s) => { ax.push(n ? [1, +n] : [0, String(s).toLowerCase()]); });
+  String(b || '').replace(/(\d+)|(\D+)/g, (_, n, s) => { bx.push(n ? [1, +n] : [0, String(s).toLowerCase()]); });
+  while (ax.length && bx.length) {
+    const an = ax.shift(), bn = bx.shift();
+    if (an[0] !== bn[0]) return an[0] - bn[0];
+    if (an[1] < bn[1]) return -1;
+    if (an[1] > bn[1]) return 1;
+  }
+  return ax.length - bx.length;
+}
+
 /**
  * 统一的素材入口：文件选择器和拖放都走这里。
  * 拖进来的东西什么都有 —— 谱图、PDF、伴奏、打包文件，所以要按类型分流。
@@ -227,10 +331,13 @@ function isImageFile(f) {
  */
 async function acceptFiles(files, mode) {
   if (!files || !files.length) return;
+  setlistIdx = -1;   // 手动导入谱图 / 工程，退出歌单连播上下文
   const proj = files.filter(isProjFile);
   const aud = files.filter(isAudioFile);
   const pdfs = files.filter(isPdfFile);
   const imgs = files.filter((f) => isImageFile(f) && !isPdfFile(f));
+  // 多选图片按文件名自然排序，避免「文件选择器点选顺序 ≠ 文件名顺序」导致页序错乱
+  if (imgs.length > 1) imgs.sort((a, b) => naturalCompare(a.name, b.name));
 
   if (proj.length) { openProjFile(proj[0]); return; }
 
@@ -312,6 +419,7 @@ function loadImageData(src, current, name, preset) {
       x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1, bars: b.bars,
       sTop: b.sTop, sBot: b.sBot,
       bounds: Array.isArray(b.bounds) ? b.bounds.slice() : null,
+      detected: Array.isArray(b.detected) ? b.detected.slice() : null,
     })) : [],
   };
   pages.push(pg);
@@ -538,11 +646,23 @@ $('btnDetect').onclick = () => {
   renderSections();
   renderBandList();
   const hitBars = bands.filter((b) => b.bounds && b.bounds.length > 1).length;
+  // 顺手体检一次，有疑问当场提醒，省得用户等到跟随才发现不对
+  let diag = null;
+  if (window.DiagCore && bands.length) {
+    diag = window.DiagCore.diagnoseRows(bands, {
+      imgW: pages[curPage].img.naturalWidth,
+      imgH: pages[curPage].img.naturalHeight,
+    });
+  }
   setLed('ok', '已识别 ' + bands.length + ' 行（第 ' + (curPage + 1) + ' 页）');
   setHint('检查右侧行列表：可删除误检行、修改每行小节数，然后点「▶ 开始跟随」'
     + (hitBars
       ? '；其中 ' + hitBars + ' 行已检到小节线，跟随按实际小节宽度'
-      : '；未检到小节线的行按小节数均分，可点「🎼 小节线」重检'));
+      : '；未检到小节线的行按小节数均分，可点「🎼 小节线」重检')
+    + (diag && diag.warnings.length
+      ? '　⚠ ' + diag.warnings.length + ' 处可疑（' + diag.warnings[0].msg
+        + '），可「⋯ 更多 → 🧪 识别诊断」导出详情'
+      : ''));
 };
 
 /**
@@ -635,6 +755,8 @@ function detectBands() {
     const r = detectBarBounds(b, img);
     b.bars = r.bars;
     b.bounds = r.bounds;                               // null 表示退回均分
+    b.detected = (r.bounds && window.CalibCore)        // 校准时的吸附目标
+      ? window.CalibCore.linesFromBounds(r.bounds) : [];
   }
   return fin;
 }
@@ -813,6 +935,8 @@ $('btnManual').onclick = () => {
 };
 
 tabImg.addEventListener('click', (e) => {
+  if (calibOn) return;                       // 校准模式下点图是编辑小节线，不是跳转
+  if (tabOn) { tabHandleClick(e); return; }  // 标注模式下点图是加音符
   const r = tabImg.getBoundingClientRect();
   const y = ((e.clientY - r.top) / r.height) * tabImg.naturalHeight;
 
@@ -855,6 +979,7 @@ $('btnBars').onclick = () => {
     const r = detectBarBounds(b, pg.img);
     b.bars = r.bars;
     b.bounds = r.bounds;
+    b.detected = r.bounds ? window.CalibCore.linesFromBounds(r.bounds) : [];  // 校准吸附用
     if (r.bounds) hit++;
   }
   renderBandList();
@@ -865,6 +990,650 @@ $('btnBars').onclick = () => {
     ? '已检到 ' + hit + ' 行的小节线，跟随框宽度改用实际小节宽度；其余行仍按小节数均分。'
     : '没检到可信的小节线，已保留原小节数并继续按均分跟随。可先「🛠 修图」增强对比度再试。');
 };
+
+/* ---------------------------------------------------- 小节线半自动校准 */
+
+let calibOn = false;      // 是否处于校准模式
+let calibBand = 0;        // 当前校准的行下标
+let calibDrag = null;     // { kind:'line'|'a'|'b', i } 拖动中的手柄
+const CALIB_GAP = 10;     // 相邻小节线/端点的最小间距(px)
+const CALIB_SNAP = 8;     // 吸附到自动检测位置的容差(px)
+const CALIB_HIT = 9;      // 命中手柄的容差(px)
+
+/** 当前校准的行对象（不存在返回 null） */
+function calibCur() {
+  return calibOn && bands[calibBand] ? bands[calibBand] : null;
+}
+
+/** 取出某行的内部小节线（无 bounds 时按小节数均分一份，保证有东西可拖） */
+function calibLines(b) {
+  if (b.bounds && b.bounds.length >= 2) {
+    return window.CalibCore.linesFromBounds(b.bounds);
+  }
+  return window.CalibCore.evenLines(b.x0, b.x1, b.bars || 4);
+}
+
+/** 把 lines 写回 band：同步 bounds 与 bars */
+function calibCommit(b, lines) {
+  const CC = window.CalibCore;
+  b.bounds = CC.boundsFromLines(lines, b.x0, b.x1);
+  b.bars = Math.max(1, b.bounds.length - 1);
+}
+
+/** 进入校准模式：先确保每行都有「检测结果」和「当前边界」 */
+function calibEnter() {
+  if (!window.CalibCore) { setHint('校准模块未加载，请刷新页面重试'); return; }
+  const pg = pages[curPage];
+  if (!pg || !pg.img.naturalWidth) { setHint('请先加载谱图'); return; }
+  if (viewMode === 'scroll') { setHint('校准仅在「🔀 翻页」模式下可用'); return; }
+  if (!bands.length) { setHint('请先识别或手动框出谱行，再进入校准'); return; }
+
+  // 自动检测一遍（已经检过的行直接用缓存的 detected），给吸附提供目标
+  for (const b of bands) {
+    if (!Array.isArray(b.detected)) {
+      const r = detectBarBounds(b, pg.img);
+      b.detected = r.bounds ? window.CalibCore.linesFromBounds(r.bounds) : [];
+    }
+    // 把当前布局落成显式边界：哪怕没检到，也按小节数均分一份，保证有东西可拖
+    if (!b.bounds) calibCommit(b, calibLines(b));
+  }
+  const detectedNow = bands.filter((b) => b.detected && b.detected.length).length;
+
+  calibOn = true;
+  calibBand = Math.max(0, Math.min(bands.length - 1, calibBand));
+  document.body.classList.add('calib');
+  $('btnCalib').classList.add('active');
+  $('calibBox').style.display = '';
+  drawBands();
+  calibRender();
+  setLed(detectedNow ? 'ok' : '', '校准中：' + (detectedNow
+    ? detectedNow + ' 行有自动检测结果（浅色虚线），拖动可吸附'
+    : '未检到小节线，可手动加线'));
+  setHint('校准中：拖动竖线微调，点空白加线，双击竖线删线。完成后点「✅ 完成校准」。');
+}
+
+/** 清掉校准图层的所有 DOM */
+function calibClear() {
+  imgWrap.querySelectorAll('.calib-band, .calib-ghost, .calib-line, .calib-end, .calib-num')
+    .forEach((n) => n.remove());
+}
+
+function calibExit(done) {
+  if (!calibOn) return;
+  calibOn = false;
+  calibDrag = null;
+  document.body.classList.remove('calib');
+  $('btnCalib').classList.remove('active');
+  $('calibBox').style.display = 'none';
+  calibClear();
+  drawBands();
+  if (done) {
+    const n = bands.filter((b) => b.bounds && b.bounds.length > 2).length;
+    setLed(n ? 'ok' : '', '校准完成：' + n + '/' + bands.length + ' 行按真实小节边界跟随');
+    setHint('校准已保存。点「▶ 开始跟随」按校准后的小节宽度走；工程文件会一起存下这些边界。');
+  }
+}
+
+/** 渲染校准图层：当前行高亮 + 检测虚线 + 可拖竖线 + 小节编号 */
+function calibRender() {
+  if (!bands.length) { calibExit(false); return; }
+  if (calibBand >= bands.length) calibBand = bands.length - 1;   // 删过行后别越界
+  calibClear();
+  const b = calibCur();
+  if (!b) return;
+  const CC = window.CalibCore;
+  const lines = calibLines(b);
+  const h = Math.max(8, b.y1 - b.y0);
+
+  // 当前行高亮
+  const box = document.createElement('div');
+  box.className = 'calib-band';
+  box.style.left = b.x0 + 'px';
+  box.style.top = b.y0 + 'px';
+  box.style.width = Math.max(1, b.x1 - b.x0) + 'px';
+  box.style.height = h + 'px';
+  imgWrap.appendChild(box);
+
+  // 机器检测位置（浅色虚线，作为吸附目标展示）
+  for (const dx of (b.detected || [])) {
+    if (CC.hitTest(lines, dx, 3) >= 0) continue;            // 已被采用就不画幽灵
+    const gh = document.createElement('div');
+    gh.className = 'calib-ghost';
+    gh.style.left = dx + 'px';
+    gh.style.top = b.y0 + 'px';
+    gh.style.height = h + 'px';
+    imgWrap.appendChild(gh);
+  }
+
+  // 小节编号
+  const m0 = measureStartAt(curPage, calibBand) + 1;
+  const bounds = CC.boundsFromLines(lines, b.x0, b.x1);
+  for (let i = 0; i < bounds.length - 1; i++) {
+    const num = document.createElement('div');
+    num.className = 'calib-num';
+    num.style.left = ((bounds[i] + bounds[i + 1]) / 2) + 'px';
+    num.style.top = b.y0 + 'px';
+    num.textContent = String(m0 + i);
+    imgWrap.appendChild(num);
+  }
+
+  // 内部小节线（可拖）
+  lines.forEach((x, i) => {
+    const d = document.createElement('div');
+    d.className = 'calib-line';
+    d.dataset.i = String(i);
+    d.title = '拖动微调，双击删除';
+    d.style.left = x + 'px';
+    d.style.top = b.y0 + 'px';
+    d.style.height = h + 'px';
+    imgWrap.appendChild(d);
+  });
+
+  // 左右端点（可拖）
+  [['a', b.x0], ['b', b.x1]].forEach(([k, x]) => {
+    const d = document.createElement('div');
+    d.className = 'calib-end';
+    d.dataset.end = k;
+    d.title = '拖动调整行的左右边界';
+    d.style.left = x + 'px';
+    d.style.top = b.y0 + 'px';
+    d.style.height = h + 'px';
+    imgWrap.appendChild(d);
+  });
+
+  calibStat();
+  $('calibBandNo').textContent = String(calibBand + 1);
+  $('calibBandTotal').textContent = String(bands.length);
+}
+
+/** 面板上的统计信息 */
+function calibStat() {
+  const b = calibCur();
+  const el = $('calibStat');
+  if (!b) { el.innerHTML = ''; return; }
+  const st = window.CalibCore.calibStats(calibLines(b), b.x0, b.x1);
+  el.innerHTML = '小节 <b>' + st.bars + '</b> 个　宽度 ' + st.minW + '–' + st.maxW
+    + 'px（均 ' + st.avgW + '）'
+    + (st.tooNarrow ? '　<span class="warn">⚠ ' + st.narrow + ' 个过窄，可能切错</span>' : '')
+    + '<br>检测线 ' + ((b.detected || []).length) + ' 条，已采用 ' + Math.max(0, st.bars - 1) + ' 条';
+}
+
+/** 事件坐标 → 图片原始像素 x/y */
+function calibPt(e) {
+  const r = tabImg.getBoundingClientRect();
+  const nw = tabImg.naturalWidth || 1;
+  const nh = tabImg.naturalHeight || 1;
+  const w = r.width || nw;                                  // jsdom 里 rect 为 0，兜底用固有尺寸
+  const hh = r.height || nh;
+  return {
+    x: ((e.clientX - r.left) / w) * nw,
+    y: ((e.clientY - r.top) / hh) * nh,
+  };
+}
+
+/** 点在某行内则切到该行 */
+function calibPickBand(y) {
+  for (let i = 0; i < bands.length; i++) {
+    const b = bands[i];
+    if (y >= b.y0 - 6 && y <= b.y1 + 6) { calibBand = i; return true; }
+  }
+  return false;
+}
+
+imgWrap.addEventListener('mousedown', (e) => {
+  if (!calibOn) return;
+  const pt = calibPt(e);
+  if (!calibPickBand(pt.y)) return;
+  const b = calibCur();
+  const lines = calibLines(b);
+  const CC = window.CalibCore;
+
+  const ek = CC.hitEnd(b.x0, b.x1, pt.x, CALIB_HIT + 3);
+  if (ek >= 0) {
+    calibDrag = { kind: ek === 0 ? 'a' : 'b', i: -1 };
+    e.preventDefault();
+    return;
+  }
+  const li = CC.hitTest(lines, pt.x, CALIB_HIT);
+  if (li >= 0) {
+    calibDrag = { kind: 'line', i: li };
+    const el = imgWrap.querySelector('.calib-line[data-i="' + li + '"]');
+    if (el) el.classList.add('drag');
+    e.preventDefault();
+    return;
+  }
+  // 空白处 → 加一条线
+  const nl = CC.addLine(lines, pt.x, b.x0, b.x1, CALIB_GAP);
+  if (nl.length === lines.length) {
+    setHint('这里加不了线：离端点或已有小节线太近了');
+    return;
+  }
+  calibCommit(b, nl);
+  calibRender();
+  renderBandList();
+  setHint('已加一条小节线（共 ' + (nl.length + 1) + ' 小节）');
+  e.preventDefault();
+});
+
+imgWrap.addEventListener('mousemove', (e) => {
+  if (!calibOn || !calibDrag) return;
+  const b = calibCur();
+  if (!b) return;
+  const pt = calibPt(e);
+  const CC = window.CalibCore;
+
+  if (calibDrag.kind === 'line') {
+    const res = CC.commitDrag(calibLines(b), calibDrag.i, pt.x, b.x0, b.x1,
+      { detected: b.detected, snapTol: CALIB_SNAP, minGap: CALIB_GAP });
+    calibCommit(b, res.lines);
+    const el = imgWrap.querySelector('.calib-line[data-i="' + calibDrag.i + '"]');
+    if (el) el.style.left = res.lines[calibDrag.i] + 'px';
+    calibStat();
+  } else {
+    // 端点：左不超过右端点一个间距，右反之
+    const nx = Math.round(CC.clamp(pt.x, calibDrag.kind === 'a' ? 0 : b.x0 + CALIB_GAP,
+      calibDrag.kind === 'a' ? b.x1 - CALIB_GAP : tabImg.naturalWidth));
+    if (calibDrag.kind === 'a') b.x0 = nx; else b.x1 = nx;
+    calibCommit(b, calibLines(b));
+    const el = imgWrap.querySelector('.calib-end[data-end="' + calibDrag.kind + '"]');
+    if (el) el.style.left = nx + 'px';
+    calibStat();
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (!calibOn || !calibDrag) return;
+  calibDrag = null;
+  imgWrap.querySelectorAll('.calib-line.drag').forEach((n) => n.classList.remove('drag'));
+  calibRender();
+  renderBandList();
+});
+
+imgWrap.addEventListener('dblclick', (e) => {
+  if (!calibOn) return;
+  const pt = calibPt(e);
+  if (!calibPickBand(pt.y)) return;
+  const b = calibCur();
+  const lines = calibLines(b);
+  const CC = window.CalibCore;
+  const li = CC.hitTest(lines, pt.x, CALIB_HIT);
+  if (li < 0) return;
+  calibCommit(b, CC.removeLine(lines, li));
+  calibRender();
+  renderBandList();
+  setHint('已删除一条小节线（共 ' + (lines.length) + ' 小节）');
+  e.preventDefault();
+});
+
+$('btnCalib').onclick = () => { if (calibOn) calibExit(true); else calibEnter(); };
+$('calibDone').onclick = () => calibExit(true);
+
+$('btnTab').onclick = () => { if (tabOn) tabExit(); else tabEnter(); };
+$('tabDone').onclick = () => tabExit();
+$('tabPlay').onclick = tabPlayAll;
+$('tabXml').onclick = tabExportXml;
+$('tabAdd').onclick = () => {
+  const raw = String(($('tabPitch').value || '')).trim();
+  const midi = raw ? window.TabCore.parsePitch(raw) : tabLastMidi;
+  if (midi == null) {
+    setHint('音高写法：C4 / A#3 / Bb4（音名）、5 或 1.（简谱）、60（MIDI）');
+    return;
+  }
+  const anchor = notes[tabSel];
+  const loc = anchor
+    ? { page: anchor.page, band: anchor.band, bar: anchor.bar,
+        beat: Math.min(tabBpb() - 0.25, anchor.beat + (anchor.dur || 1)) }
+    : { page: curPage, band: 0, bar: 0, beat: 0 };
+  tabAddAt(loc, midi);
+};
+$('tabClear').onclick = () => {
+  if (!notes.length) return;
+  const n = notes.length;
+  notes = [];
+  tabSel = -1;
+  tabRender();
+  setHint('已清空 ' + n + ' 个音符（不可撤销）');
+};
+$('tabPitch').onkeydown = (e) => {
+  if (e.key !== 'Enter') return;
+  const m = window.TabCore.parsePitch(String($('tabPitch').value || '').trim());
+  if (m == null) { setHint('认不出这个音高'); return; }
+  if (notes[tabSel]) { notes[tabSel].midi = m; tabLastMidi = m; tabTone(m, null, 0.3); tabRender(); }
+  else $('tabAdd').click();
+};
+document.addEventListener('keydown', tabKey);
+$('calibPrev').onclick = () => { if (!bands.length) return; calibBand = (calibBand - 1 + bands.length) % bands.length; calibRender(); };
+$('calibNext').onclick = () => { if (!bands.length) return; calibBand = (calibBand + 1) % bands.length; calibRender(); };
+
+$('calibEven').onclick = () => {
+  const b = calibCur();
+  if (!b) return;
+  calibCommit(b, window.CalibCore.evenLines(b.x0, b.x1, b.bars || 4));
+  calibRender();
+  renderBandList();
+  setHint('已按 ' + b.bars + ' 个小节平均切开');
+};
+
+$('calibReset').onclick = () => {
+  const b = calibCur();
+  if (!b) return;
+  if (!Array.isArray(b.detected) || !b.detected.length) {
+    setHint('这一行没有自动检测结果，没什么可还原的');
+    return;
+  }
+  calibCommit(b, b.detected.slice());
+  calibRender();
+  renderBandList();
+  setHint('已还原到自动检测结果');
+};
+
+$('calibDetect').onclick = () => {
+  const pg = pages[curPage];
+  const b = calibCur();
+  if (!b || !pg || !pg.img.naturalWidth) return;
+  const r = detectBarBounds(b, pg.img);
+  b.detected = r.bounds ? window.CalibCore.linesFromBounds(r.bounds) : [];
+  if (r.bounds) calibCommit(b, b.detected.slice());
+  calibRender();
+  renderBandList();
+  setHint(r.bounds
+    ? ('重检出 ' + b.detected.length + ' 条小节线（' + b.bars + ' 小节）')
+    : '这行没检到可信的小节线，可以手动加线');
+};
+
+/* ------------------------------------- Feature 25：音符标注 → 发声 / MusicXML */
+
+/**
+ * 已标注音符 [{page,band,bar,beat,dur,midi}]
+ * 谱型无关：用 MIDI 音高而非「几弦几品」，因为六线谱/简谱/五线谱的交集是音高，
+ * 六线谱的弦品只在录入端换算（TabCore.parsePitch 支持 "C4" / "5" / "60" 三种写法）。
+ */
+let notes = [];
+/** 是否处于标注模式 */
+let tabOn = false;
+/** 选中音符在 notes 里的下标，-1 = 未选中 */
+let tabSel = -1;
+/** 标注发声用的 AudioContext（懒创建，浏览器要用户手势后才让出声） */
+let tabCtx = null;
+/** 上一个录入的音高：点图加音时省略输入就用它，连续录入很快 */
+let tabLastMidi = 60;
+
+/** 当前 BPM / 每小节拍数：随读随取，避免改了控件不同步 */
+function tabBpm() { return parseInt(($('bpm') || {}).value, 10) || 120; }
+function tabBpb() { return parseInt(($('bpb') || {}).value, 10) || 4; }
+
+function tabAc() {
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return null;
+  if (!tabCtx) tabCtx = new C();
+  if (tabCtx.state === 'suspended') tabCtx.resume();
+  return tabCtx;
+}
+
+/** 发一声指定音高；when 省略=立刻，dur 单位秒 */
+function tabTone(midi, when, dur) {
+  const ac = tabAc();
+  if (!ac) return;
+  const t = when != null ? when : ac.currentTime + 0.01;
+  const d = dur > 0 ? dur : 0.5;
+  try {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.value = window.TabCore.midiToFreq(midi);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g);
+    g.connect(ac.destination);
+    o.start(t);
+    o.stop(t + d + 0.02);
+  } catch (e) { /* 音频策略拦截：不影响标注本身 */ }
+}
+
+/** 第 page 页第 band 行在全曲中的起始毫秒 */
+function tabRowStart(page, band) {
+  let ms = durBeforePage(page);
+  const bs = (pages[page] && pages[page].bands) || [];
+  for (let k = 0; k < band && k < bs.length; k++) ms += bandDur(bs[k]);
+  return ms;
+}
+
+/** 第 barIdx 小节的像素范围；没检到边界就退回均分 */
+function tabBarSeg(b, barIdx) {
+  if (window.BarlineCore) {
+    const seg = window.BarlineCore.barBoundsAt(b.bounds, barIdx);
+    if (seg) return seg;
+  }
+  const w = (b.x1 - b.x0) / Math.max(1, b.bars);
+  return { a: b.x0 + barIdx * w, b: b.x0 + (barIdx + 1) * w };
+}
+
+/** 图片坐标 → 音符位置；落在任何行/小节之外返回 null */
+function tabLocate(x, y) {
+  const bpb = tabBpb();
+  for (let bi = 0; bi < bands.length; bi++) {
+    const b = bands[bi];
+    if (y < b.y0 - 8 || y > b.y1 + 8) continue;
+    for (let mi = 0; mi < b.bars; mi++) {
+      const seg = tabBarSeg(b, mi);
+      if (x >= seg.a - 4 && x <= seg.b + 4) {
+        let beat = ((x - seg.a) / Math.max(1, seg.b - seg.a)) * bpb;
+        beat = Math.round(beat * 4) / 4;               // 量化到十六分音符
+        beat = Math.max(0, Math.min(bpb - 0.25, beat));
+        return { page: curPage, band: bi, bar: mi, beat: beat };
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * 音符 → 图上位置。
+ * 横向按小节内进度，纵向按音高高低（高音在上）——这样标注的行轮廓能跟原谱直接对照，
+ * 一眼看出标错没有，而不是挤成一排看不出问题。
+ */
+function tabNoteXY(n) {
+  if (n.page !== curPage) return null;
+  const b = bands[n.band];
+  if (!b) return null;
+  const bpb = tabBpb();
+  const seg = tabBarSeg(b, n.bar);
+  const x = seg.a + (seg.b - seg.a) * (Math.max(0, Math.min(bpb, n.beat)) / bpb);
+  const top = b.sTop != null ? b.sTop : b.y0;
+  const bot = b.sBot != null ? b.sBot : b.y1;
+  const LO = 40;                                        // E2，吉他最低音
+  const HI = 88;                                        // E6
+  const r = (Math.max(LO, Math.min(HI, n.midi)) - LO) / (HI - LO);
+  return { x: x, y: bot - r * (bot - top) };
+}
+
+/** 进入标注模式 */
+function tabEnter() {
+  if (!bands.length) { setHint('先「🤖 自动识别」或「✌️ 手动框行」画出谱行'); return; }
+  if (calibOn) return;
+  tabOn = true;
+  $('tabBox').style.display = '';
+  $('btnTab').classList.add('active');
+  document.body.classList.add('tabmode');
+  tabRender();
+  setHint('标注模式：在谱图上点一下加音符。点已有音符选中后，↑↓ 改音高、Delete 删除、←→ 换下一个。');
+}
+
+/** 退出标注模式 */
+function tabExit() {
+  if (!tabOn) return;
+  tabOn = false;
+  tabSel = -1;
+  tabClearLayer();
+  $('tabBox').style.display = 'none';
+  $('btnTab').classList.remove('active');
+  document.body.classList.remove('tabmode');
+}
+
+/** 清掉图上的音符标记（必须与 tabExit 都调到，否则会像校准图层那样残留在图上） */
+function tabClearLayer() {
+  if (!imgWrap) return;
+  imgWrap.querySelectorAll('.tab-note').forEach((n) => n.remove());
+}
+
+function tabRender() {
+  tabClearLayer();
+  if (!tabOn) { tabStat(); return; }
+  const list = window.TabCore.sortNotes(notes);
+  for (const n of list) {
+    const p = tabNoteXY(n);
+    if (!p) continue;                                   // 不在当前页
+    const idx = notes.indexOf(n);
+    const d = document.createElement('div');
+    d.className = 'tab-note' + (idx === tabSel ? ' sel' : '');
+    d.style.left = p.x + 'px';
+    d.style.top = p.y + 'px';
+    d.textContent = window.TabCore.midiToName(n.midi);
+    d.title = window.TabCore.midiToName(n.midi) + '　' + n.dur + ' 拍';
+    d.dataset.idx = String(idx);
+    d.onclick = (ev) => {
+      ev.stopPropagation();
+      tabSel = idx;
+      tabTone(n.midi, null, 0.35);
+      tabRender();
+    };
+    imgWrap.appendChild(d);
+  }
+  tabStat();
+}
+
+/** 面板统计 */
+function tabStat() {
+  const el = $('tabStat');
+  if (el) {
+    el.innerHTML = notes.length
+      ? '已标注 <b>' + notes.length + '</b> 个音符　选中：<b>'
+        + (notes[tabSel] ? window.TabCore.midiToName(notes[tabSel].midi) : '—') + '</b>'
+      : '还没有音符。在谱图上点一下即可加音。';
+  }
+  const info = $('tabCurInfo');
+  if (info) info.textContent = (curPage + 1) + '/' + Math.max(1, pages.length) + ' 页';
+}
+
+/** 在指定位置放一个音符（已存在同位置同音高则改为选中它） */
+function tabAddAt(loc, midi) {
+  const n = window.TabCore.sanitizeNote({
+    page: loc.page, band: loc.band, bar: loc.bar, beat: loc.beat,
+    dur: parseFloat(($('tabDur') || {}).value) || 1,
+    midi: midi,
+  }, { bpb: tabBpb() });
+  if (!n) return null;
+  const dup = notes.findIndex((o) => o.page === n.page && o.band === n.band
+    && o.bar === n.bar && Math.abs(o.beat - n.beat) < 1e-6 && o.midi === n.midi);
+  if (dup >= 0) tabSel = dup;
+  else { notes.push(n); tabSel = notes.length - 1; }
+  tabLastMidi = n.midi;
+  tabTone(n.midi, null, Math.min(0.7, n.dur * (60000 / tabBpm()) / 1000));
+  tabRender();
+  return n;
+}
+
+/** 标注模式下点图：在点击处加音符 */
+function tabHandleClick(e) {
+  const pt = calibPt(e);
+  const loc = tabLocate(pt.x, pt.y);
+  if (!loc) { setHint('要点在小节范围内才能加音符（确认谱行与小节线没问题）'); return; }
+  const raw = String(($('tabPitch').value || '')).trim();
+  const parsed = raw ? window.TabCore.parsePitch(raw) : null;
+  if (raw && parsed == null) {
+    setHint('「' + raw + '」认不出音高。支持：C4 / A#3 / Bb4（音名）、5 或 1.（简谱）、60（MIDI）');
+    return;
+  }
+  tabAddAt(loc, parsed != null ? parsed : tabLastMidi);
+}
+
+/** 键盘：↑↓ 改音高、←→ 换音符、Delete 删除、1–7 直接设为简谱音高 */
+function tabKey(e) {
+  if (!tabOn) return;
+  const t = e.target;
+  if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (notes[tabSel]) {
+      notes.splice(tabSel, 1);
+      tabSel = Math.min(tabSel, notes.length - 1);
+      tabRender();
+      e.preventDefault();
+    }
+    return;
+  }
+
+  const order = window.TabCore.sortNotes(notes);
+  const cur = notes[tabSel] ? order.indexOf(notes[tabSel]) : -1;
+
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const nx = cur + (e.key === 'ArrowRight' ? 1 : -1);
+    if (nx >= 0 && nx < order.length) tabSel = notes.indexOf(order[nx]);
+    tabRender();
+    e.preventDefault();
+    return;
+  }
+
+  const n = notes[tabSel];
+  if (!n) return;
+
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    n.midi = Math.max(21, Math.min(108, n.midi + (e.key === 'ArrowUp' ? 1 : -1)));
+    tabLastMidi = n.midi;
+    tabTone(n.midi, null, 0.3);
+    tabRender();
+    e.preventDefault();
+  } else if (/^[1-7]$/.test(e.key)) {
+    const m = window.TabCore.parsePitch(e.key, { octave: 4 });
+    if (m != null) { n.midi = m; tabLastMidi = m; tabTone(m, null, 0.3); tabRender(); }
+    e.preventDefault();
+  }
+}
+
+/** 按当前 BPM 试听全部标注 */
+function tabPlayAll() {
+  const list = window.TabCore.sortNotes(notes);
+  if (!list.length) { setHint('还没有标注任何音符'); return; }
+  const ac = tabAc();
+  if (!ac) { setHint('当前环境不支持 WebAudio，无法发声'); return; }
+  const bpm = tabBpm();
+  const base = ac.currentTime + 0.12;
+  for (const n of list) {
+    const startMs = window.TabCore.noteStartMs(tabRowStart(n.page, n.band), n.bar, n.beat, bpm, tabBpb());
+    const durSec = Math.max(0.12, n.dur * (60000 / bpm) / 1000);
+    tabTone(n.midi, base + startMs / 1000, durSec);
+  }
+  setHint('试听中：' + list.length + ' 个音符 @ ' + bpm + ' BPM');
+}
+
+/**
+ * 导出 MusicXML：标一次，就能在「谱面模式」用 alphaTab 高质量播放、变速、循环。
+ * 这是图片谱走到「发声」最有价值的一步——发出的不是合成电子音，而是完整的谱面演奏。
+ */
+function tabExportXml() {
+  const list = window.TabCore.sortNotes(notes);
+  if (!list.length) { setHint('还没有标注任何音符'); return; }
+  const map = new Map();
+  for (const n of list) {
+    const mi = measureStartAt(n.page, n.band) + n.bar;
+    if (!map.has(mi)) map.set(mi, []);
+    map.get(mi).push({ start: n.beat, dur: n.dur, midi: n.midi });
+  }
+  const keys = Array.from(map.keys()).sort((a, b) => a - b);
+  const measures = [];
+  for (let m = keys[0]; m <= keys[keys.length - 1]; m++) measures.push(map.get(m) || []);
+  const xml = window.TabCore.toMusicXml({
+    title: 'TabPilot 标注',
+    bpm: tabBpm(),
+    bpb: tabBpb(),
+    measures: measures,
+  });
+  downloadText(xml, 'tabpilot-notes.musicxml', 'application/xml');
+  setHint('已导出 ' + list.length + ' 个音符共 ' + measures.length
+    + ' 小节。用谱面模式打开这个 .musicxml 即可高质量播放。');
+}
 
 /* -------------------------------------------------------------- 谱行列表 UI */
 
@@ -941,6 +1710,10 @@ function drawBands() {
 
   // 段落标记只画「当前页」的（翻页模式一次只显示一页）
   marks.forEach((m, i) => { if (m.page === curPage) drawSection(m, i, imgWrap, 1); });
+
+  // 校准/标注图层都画在谱行框之上，重绘谱行后要一并刷新
+  if (calibOn) calibRender();
+  if (tabOn) tabRender();
 }
 
 /* -------------------------------------------------------------- 段落标记 */
@@ -1161,7 +1934,9 @@ function renderPageNav() {
   pages.forEach((pg, i) => {
     const b = document.createElement('button');
     b.className = 'thumb' + (i === curPage ? ' cur' : '');
-    b.title = '第 ' + (i + 1) + ' 页（点击切换）';
+    b.title = '第 ' + (i + 1) + ' 页（点击切换；拖动可重排，悬停右上角 × 删除）';
+    b.draggable = true;
+    b.dataset.idx = i;
     const im = document.createElement('img');
     im.src = pg.src;
     im.alt = '第 ' + (i + 1) + ' 页';
@@ -1169,9 +1944,86 @@ function renderPageNav() {
     const tag = document.createElement('span');
     tag.textContent = (i + 1);
     b.appendChild(tag);
+    const rm = document.createElement('span');
+    rm.className = 'rm';
+    rm.textContent = '×';
+    rm.title = '删除本页';
+    rm.onclick = (e) => { e.stopPropagation(); deletePage(i); };
+    b.appendChild(rm);
     b.onclick = () => gotoPage(i);
+    // 拖拽重排：拖起记源索引，落到目标缩略图即把源页移到该位置
+    b.ondragstart = (e) => {
+      dragFrom = i; b.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', String(i)); } catch (_) {}
+    };
+    b.ondragend = () => {
+      dragFrom = -1; b.classList.remove('dragging');
+      strip.querySelectorAll('.thumb').forEach((t) => t.classList.remove('dragover'));
+    };
+    b.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; b.classList.add('dragover'); };
+    b.ondragleave = () => { b.classList.remove('dragover'); };
+    b.ondrop = (e) => {
+      e.preventDefault(); b.classList.remove('dragover');
+      if (dragFrom >= 0 && dragFrom !== i) reorderPages(dragFrom, i);
+    };
     strip.appendChild(b);
   });
+}
+
+/** 重排 / 删页后统一刷新：滚动模式先重建长图，再切回当前页并刷新导航与段落标记 */
+function afterPagesChanged() {
+  if (playing || paused) stop();
+  if (viewMode === 'scroll') buildScrollView();
+  if (pages.length) switchPageDisplay(curPage);
+  else { bands = []; renderPageNav(); }
+}
+
+/**
+ * 把第 from 页移动到第 to 页的位置，并重映射受影响的段落标记（marks 按 page 索引持久化）。
+ * @param {number} from
+ * @param {number} to
+ */
+function reorderPages(from, to) {
+  const n = pages.length;
+  if (from < 0 || to < 0 || from >= n || to >= n || from === to) return;
+  const moved = pages.splice(from, 1)[0];
+  pages.splice(to, 0, moved);
+  // 重映射：先构造「新位置 → 原索引」序列，再反推「原索引 → 新索引」
+  const order = [];
+  for (let k = 0; k < n; k++) order.push(k);
+  const [m] = order.splice(from, 1); order.splice(to, 0, m);
+  const oldToNew = new Array(n);
+  order.forEach((oldIdx, newIdx) => { oldToNew[oldIdx] = newIdx; });
+  marks.forEach((mk) => { mk.page = oldToNew[mk.page]; });
+  curPage = oldToNew[curPage];
+  afterPagesChanged();
+}
+
+/**
+ * 删除第 pi 页：移除该页的段落标记，后续页的标记索引平移。
+ * @param {number} pi
+ */
+function deletePage(pi) {
+  if (pi < 0 || pi >= pages.length) return;
+  if (pages.length === 1) {
+    // 删掉最后一页：清空全部
+    stop();
+    pages = []; curPage = 0; bands = [];
+    marks = marks.filter((mk) => mk.page !== pi);   // 此时应为空
+    if (tabImg) tabImg.removeAttribute('src');
+    renderPageNav();
+    setHint('已删除最后一页，加载新谱图开始');
+    return;
+  }
+  pages.splice(pi, 1);
+  marks = marks
+    .filter((mk) => mk.page !== pi)
+    .map((mk) => ({ ...mk, page: mk.page > pi ? mk.page - 1 : mk.page }));
+  if (curPage === pi) curPage = Math.min(pi, pages.length - 1);
+  else if (curPage > pi) curPage -= 1;
+  afterPagesChanged();
+  setHint('已删除第 ' + (pi + 1) + ' 页，共 ' + pages.length + ' 页');
 }
 
 /* ------------------------------------------------------------------ 时间轴 */
@@ -1264,18 +2116,18 @@ function play() {
     setHint('请先识别或手动框选谱行');
     return;
   }
+  if (countInTimer) return;            // 预备拍进行中：忽略重复点击
   if (playing && !paused) return;
   if (paused) { resume(); return; }
+  if (countIn) { startCountIn(() => startAtTime(elapsedBase)); return; }
   startAtTime(elapsedBase);   // 从当前位置（或起点）继续
 }
 
 /** 从指定音乐时间(ms)开始播放（跨页时间轴） */
 function startAtTime(t0ms) {
   stop(false);
-  if (metro) ensureAC();
   elapsedBase = t0ms;
   t0 = performance.now();
-  lastBeat = -1;
   playing = true;
   paused = false;
   if (!sessStart) sessStart = Date.now();   // 开始计本次练习时长
@@ -1338,6 +2190,7 @@ function stop(reset = true) {
   if (reset) finishPractice();
   if (timer) clearInterval(timer);
   timer = null;
+  if (countInTimer) { clearTimeout(countInTimer); countInTimer = null; }  // 取消尚未开始的预备拍
   stopAudio();   // 停止跟随的同时停掉伴奏
   playing = false;
   paused = false;
@@ -1471,7 +2324,11 @@ function buildProject() {
         x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1, bars: b.bars,
         sTop: b.sTop, sBot: b.sBot,
         bounds: Array.isArray(b.bounds) ? b.bounds.slice() : null,
+        detected: Array.isArray(b.detected) ? b.detected.slice() : null,
       })),
+    })),
+    notes: notes.map((n) => ({
+      page: n.page, band: n.band, bar: n.bar, beat: n.beat, dur: n.dur, midi: n.midi,
     })),
   };
 }
@@ -1483,6 +2340,71 @@ function exportProject() {
   const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   downloadText(JSON.stringify(proj, null, 2), 'tabpilot-' + ts + '.json', 'application/json');
   setHint('已导出工程文件（含谱图 + 谱行识别结果 + 段落标记），下次「打开工程」即可免重框');
+}
+
+/**
+ * 导出「识别体检报告」：只含几何数据与可疑项，**不含谱图**，
+ * 因此文件只有几 KB，可以直接把内容贴给开发者排查识别不准的问题。
+ */
+function exportDiagnose() {
+  if (!window.DiagCore) { setHint('诊断模块未加载，请刷新页面重试'); return; }
+  if (!pages.length) { setHint('请先加载谱图'); return; }
+  const Diag = window.DiagCore;
+
+  // 逐页体检：多页 PDF 也能一次拿全，不用一页一页点
+  const pageReports = [];
+  let totalRows = 0;
+  let totalBars = 0;
+  let totalWarn = 0;
+  pages.forEach((p, i) => {
+    const w = p.img ? p.img.naturalWidth : 0;
+    const h = p.img ? p.img.naturalHeight : 0;
+    const r = Diag.diagnoseRows(p.bands || [], { imgW: w, imgH: h });
+    totalRows += r.summary.rows;
+    totalBars += r.summary.bars;
+    totalWarn += r.warnings.length;
+    pageReports.push({
+      page: i + 1, imgW: w, imgH: h,
+      summary: r.summary,
+      warnings: r.warnings,
+      rows: r.rows,
+    });
+  });
+
+  const payload = {
+    app: 'TabPilot',
+    kind: 'image-tab-diagnose',
+    when: new Date().toISOString(),
+    total: { pages: pages.length, rows: totalRows, bars: totalBars, warnings: totalWarn },
+    pages: pageReports,
+  };
+  const text = JSON.stringify(payload, null, 2);
+  const cur = pageReports[curPage] || { summary: { rows: 0, bars: 0 }, warnings: [] };
+  const brief = totalRows
+    ? (pages.length > 1 ? pages.length + ' 页共 ' : '') + totalRows + ' 行 / '
+      + totalBars + ' 小节' + (totalWarn ? '，' + totalWarn + ' 处可疑' : '，未发现明显异常')
+    : '还没识别出行';
+  const first = cur.warnings.length ? cur.warnings[0].msg : '';
+
+  const finish = (how) => {
+    setLed(totalWarn ? '' : 'ok', brief);
+    setHint(brief + '。' + how
+      + (totalWarn ? '　首条：' + (cur.warnings.length ? first : pageReports.find((p) => p.warnings.length).warnings[0].msg)
+        : ''));
+  };
+  const fallback = () => {
+    downloadText(text, 'tabpilot-diag-' + Date.now() + '.json', 'application/json');
+    finish('剪贴板不可用，已下载报告文件');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      navigator.clipboard.writeText(text).then
+        ? navigator.clipboard.writeText(text).then(() => finish('报告已复制到剪贴板，可直接贴给开发者'), fallback)
+        : fallback();
+    } catch (e) { fallback(); }
+  } else {
+    fallback();
+  }
 }
 
 /** 应用工程对象：恢复页、谱行与参数（供「打开工程」与测试复用） */
@@ -1504,6 +2426,14 @@ function applyProject(proj) {
     : [];
   proj.pages.forEach((pg, idx) => loadProjectPage(pg.src, pg.bands || [], idx === 0));
   renderSections();
+
+  notes = Array.isArray(proj.notes)
+    ? proj.notes
+      .map((n) => window.TabCore.sanitizeNote(n, { bpb: tabBpb() }))
+      .filter(Boolean)
+    : [];
+  tabSel = -1;
+  tabRender();
 
   const st = proj.settings || {};
   if (st.bpm) $('bpm').value = st.bpm;
@@ -1533,6 +2463,7 @@ function importProjectFile(file) {
       setHint('打开工程失败：不是 TabPilot 工程文件');
       return;
     }
+    setlistIdx = -1;   // 手动打开工程不属于歌单播放
     applyProject(proj);
   };
   r.onerror = () => setHint('读取工程文件失败');
@@ -1658,6 +2589,7 @@ function applyBundleBytes(u8) {
     setHint('打包文件里的工程数据不是合法 JSON'); return;
   }
   if (!proj || !Array.isArray(proj.pages)) { setHint('打包文件里的工程数据不完整'); return; }
+  setlistIdx = -1;   // 手动打开打包文件不属于歌单播放
   applyProject(proj);
   const au = res.parts.audio;
   if (au && au.bytes.length) loadAudioBytes(au.bytes, au.meta);
@@ -1674,8 +2606,9 @@ function openProjFile(file) {
     const u8 = new Uint8Array(r.result);
     if (isBundle(u8)) { applyBundleBytes(u8); return; }
     try {
-      const proj = JSON.parse(new TextDecoder().decode(u8));
+      const       proj = JSON.parse(new TextDecoder().decode(u8));
       if (!proj || proj.app !== 'TabPilot' || !Array.isArray(proj.pages)) throw new Error('bad');
+      setlistIdx = -1;   // 手动打开工程不属于歌单播放，避免误触发自动连播
       applyProject(proj);
     } catch (e) {
       setHint('打开失败：既不是 .tabpilot 打包文件，也不是 TabPilot 工程 JSON');
@@ -1714,6 +2647,7 @@ function downloadBlob(blob, filename) {
 }
 
 $('btnSaveProj').onclick = exportProject;
+$('btnDiag').onclick = exportDiagnose;
 $('btnSaveBundle').onclick = exportBundle;
 $('btnOpenProj').onclick = () => $('projInput').click();
 $('projInput').onchange = (e) => {
@@ -1920,7 +2854,9 @@ $('pmClear').onclick = () => {
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if ($('practiceModal').style.display === 'flex') closePractice();
+  if (calibOn) calibExit(false);
+  else if (tabOn) tabExit();
+  else if ($('practiceModal').style.display === 'flex') closePractice();
   else if ($('prepModal').style.display === 'flex') closePrep();
   else toggleFocus(false);
 });
@@ -3639,7 +4575,9 @@ document.addEventListener('click', (e) => {
   if (!morePop.contains(e.target)) morePop.classList.remove('open');
 });
 $('btnClear').onclick = () => {
-  pages = []; curPage = 0; bands = []; marks = [];
+  calibExit(false);
+  setlistIdx = -1;   // 清空后退出歌单连播上下文
+  pages = []; curPage = 0; bands = []; marks = []; notes = []; tabSel = -1;
   renderSections();
   stop();
   tabImg.removeAttribute('src');   // 清掉图上内容，回到空态引导
@@ -3815,6 +4753,11 @@ function tick() {
   if (!playing || paused) return;
   let t = musicNow();
   if (t >= totalDur()) {
+    // 歌单自动连播：播完当前曲直接加载下一首并从头播放
+    if (setlistAuto && setlistIdx >= 0 && setlistIdx < setlist.length - 1) {
+      playSetlistAt(setlistIdx + 1);
+      return;
+    }
     stop();
     setLed('ok', '已播完');
     return;
@@ -3834,14 +4777,7 @@ function tick() {
   showPosition(loc.band, loc.bar, loc.p);
   $('elapsed').textContent = (t / 1000).toFixed(1) + 's';
   updateAudioHead(t);
-
-  // 节拍器：稳定 BPM 下按全局拍号取模即可区分重拍
-  const beatMs = 60000 / parseInt($('bpm').value, 10);
-  const beat = Math.floor(t / beatMs);
-  if (beat !== lastBeat) {
-    lastBeat = beat;
-    clickTick(beat % parseInt($('bpb').value, 10) === 0);
-  }
+  // 注：跟随时若需节拍声，请用独立节拍器（btnMetro），其打点循环与跟随时钟解耦、不会重叠。
 }
 
 /** 把当前位置绘制到界面上：小节框 + 扫描线 + 自动滚动 + 状态 + 放大镜 */
@@ -3989,6 +4925,131 @@ function drawMag(x, y, w, h) {
   ctx.stroke();
 }
 
+/* ------------------------------------------------------------------ 歌单 / 连续练习 */
+
+/**
+ * 歌单：把多份工程排成一单，可手动点播或「自动连播」依次加载。
+ * 每项存 buildProject() 的序列化对象（含谱图 dataURL），切换只调 applyProject，无需重新读盘。
+ * 为避开 localStorage 配额（谱图 dataURL 可能很大），歌单仅存内存，刷新即清空。
+ */
+
+/** 把「当前已加载谱」加入歌单 */
+function addSetlistCurrent() {
+  if (!pages.length) { setHint('还没有可加入的谱：先加载并识别谱行'); return; }
+  setlist.push({ name: '曲目 ' + (setlist.length + 1), proj: buildProject() });
+  renderSetlist();
+  setHint('已加入歌单：' + setlist[setlist.length - 1].name + '（共 ' + setlist.length + ' 首）');
+}
+
+/** 从工程文件（.tabpilot / JSON）加入歌单 */
+function importSetlistFile(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    let proj = null;
+    try {
+      const u8 = new Uint8Array(r.result);
+      if (isBundle(u8)) {
+        const res = unpackBundle(u8);   // .tabpilot 容器：取出其中的工程段
+        const pj = res && res.parts && res.parts.project;
+        if (!pj) throw new Error('no project');
+        proj = JSON.parse(new TextDecoder().decode(pj.bytes));
+      } else {
+        proj = JSON.parse(new TextDecoder().decode(u8));
+      }
+      if (!proj || proj.app !== 'TabPilot' || !Array.isArray(proj.pages)) throw new Error('bad');
+    } catch (e) {
+      setHint('加入歌单失败：不是合法 TabPilot 工程');
+      return;
+    }
+    const name = (file.name || '曲目').replace(/\.(tabpilot|json)$/i, '');
+    setlist.push({ name, proj });
+    renderSetlist();
+    setHint('已加入歌单：' + name);
+  };
+  r.readAsArrayBuffer(file);
+}
+
+/** 从歌单第 i 首开始播放（手动点播与自动连播都走这里） */
+function playSetlistAt(i) {
+  if (i < 0 || i >= setlist.length) return;
+  setlistIdx = i;
+  applyProject(setlist[i].proj);   // 内部会 stop() 复位到起点
+  setHint('歌单 ' + (i + 1) + '/' + setlist.length + '：' + setlist[i].name + (setlistAuto ? '（自动连播）' : ''));
+  play();
+  renderSetlist();
+}
+
+/** 移除歌单项，同步修正当前播放索引 */
+function removeSetlist(i) {
+  if (i < 0 || i >= setlist.length) return;
+  setlist.splice(i, 1);
+  if (setlistIdx === i) setlistIdx = -1;
+  else if (setlistIdx > i) setlistIdx--;
+  renderSetlist();
+}
+
+/** 上 / 下移歌单项，保持当前播放索引指向同一首 */
+function moveSetlist(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= setlist.length) return;
+  const t = setlist[i]; setlist[i] = setlist[j]; setlist[j] = t;
+  if (setlistIdx === i) setlistIdx = j;
+  else if (setlistIdx === j) setlistIdx = i;
+  renderSetlist();
+}
+
+/** 渲染歌单面板 */
+function renderSetlist() {
+  const box = $('setlistItems');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!setlist.length) {
+    box.innerHTML = '<div class="sl-empty">歌单为空：点「添加当前谱」把正在练的曲子收进来，或「导入工程」加载 .tabpilot。</div>';
+  }
+  setlist.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'sl-row' + (i === setlistIdx ? ' cur' : '');
+    const up = document.createElement('button');
+    up.className = 'sl-btn'; up.textContent = '▲'; up.title = '上移'; up.onclick = () => moveSetlist(i, -1);
+    const down = document.createElement('button');
+    down.className = 'sl-btn'; down.textContent = '▼'; down.title = '下移'; down.onclick = () => moveSetlist(i, 1);
+    const play = document.createElement('button');
+    play.className = 'sl-btn play'; play.textContent = '▶'; play.title = '从这里播放'; play.onclick = () => playSetlistAt(i);
+    const name = document.createElement('input');
+    name.className = 'sl-name'; name.value = it.name; name.oninput = () => { it.name = name.value; };
+    const meta = document.createElement('span');
+    meta.className = 'sl-meta';
+    const pg = it.proj && it.proj.pages ? it.proj.pages.length : 0;
+    const bpm = it.proj && it.proj.settings ? it.proj.settings.bpm : '—';
+    meta.textContent = pg + ' 页 · ' + bpm + ' BPM';
+    const del = document.createElement('button');
+    del.className = 'sl-btn del'; del.textContent = '✕'; del.title = '移除'; del.onclick = () => removeSetlist(i);
+    row.appendChild(up); row.appendChild(down); row.appendChild(play);
+    row.appendChild(name); row.appendChild(meta); row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+/** 打开 / 关闭歌单面板 */
+function openSetlist() {
+  $('morePop').classList.remove('open');
+  $('setlistModal').style.display = 'flex';
+  renderSetlist();
+}
+function closeSetlist() { $('setlistModal').style.display = 'none'; }
+
+$('btnSetlist').onclick = openSetlist;
+$('btnSetlistClose').onclick = closeSetlist;
+$('btnSetlistAdd').onclick = addSetlistCurrent;
+$('btnSetlistImport').onclick = () => $('setlistInput').click();
+$('setlistInput').onchange = (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) importSetlistFile(f);
+  e.target.value = '';   // 允许重复选择同一文件
+};
+$('btnSetlistPlay').onclick = () => { if (setlist.length) playSetlistAt(0); };
+$('setlistAutoChk').onchange = (e) => { setlistAuto = e.target.checked; };
+
 /* ------------------------------------------------------------------ 设置 */
 
 /**
@@ -4021,6 +5082,7 @@ function applySettings(s) {
   // 视图模式：只在真正变化时重建（默认翻页即为初始 DOM，首帧无需处理）
   const vm = s.viewMode || 'flip';
   if (vm !== viewMode) {
+    if (vm === 'scroll' && calibOn) calibExit(false);   // 校准只在翻页模式，切视图就退出
     viewMode = vm;
     setViewModeUI();
     applyViewModeDom();
@@ -4037,4 +5099,19 @@ window.addEventListener('DOMContentLoaded', () => {
   renderPageNav();
   renderSections();
   updateTrainUI();
+});
+
+/* 曲库：从 ?blob=/?name=/?idx= 直接打开（文件经 blob URL 重建为 File 后交给统一入口） */
+window.addEventListener('DOMContentLoaded', function () {
+  var q = new URLSearchParams(location.search);
+  var blobs = q.getAll('blob');
+  if (!blobs.length) return;
+  var names = q.getAll('name');
+  Promise.all(blobs.map(function (u, i) {
+    return fetch(u).then(function (r) { return r.blob(); }).then(function (b) {
+      return new File([b], names[i] || ('file' + i), { type: b.type || 'application/octet-stream' });
+    });
+  })).then(function (files) {
+    if (files.length) acceptFiles(files, 'replace');
+  }).catch(function (e) { console.error('曲库打开失败', e); });
 });
