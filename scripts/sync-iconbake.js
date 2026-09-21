@@ -10,40 +10,61 @@
  *   npm run sync:iconbake
  *
  * 说明
- *   IconBake 仓库（默认 /path/to/IconBake）用 `vite build --base /iconbake/`
- *   构建后的 `dist/` 会被原样拷贝到本仓库 `public/iconbake/`。
- *   若 IconBake 不在默认位置，用环境变量指定其 dist 目录：
- *       ICONBAKE_DIST=D:/path/to/IconBake/dist npm run sync:iconbake
+ *   本脚本会先在 IconBake 仓库里执行 `vite build --base /iconbake/`，
+ *   再把产物拷贝到本仓库 `public/iconbake/`。
+ *   若 IconBake 不在默认位置，用环境变量指定：
+ *       ICONBAKE_ROOT=D:/path/to/IconBake npm run sync:iconbake
  *   注意：public/iconbake 需提交进 Git（Vercel 构建时拉取的是本仓库）。
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPO_ROOT = path.join(__dirname, '..');
 const DEST = path.join(REPO_ROOT, 'public', 'iconbake');
-const SRC = path.resolve(
-  process.env.ICONBAKE_DIST || path.join(REPO_ROOT, '..', 'ImageToFont', 'dist')
+const ICONBAKE_ROOT = path.resolve(
+  process.env.ICONBAKE_ROOT || path.join(REPO_ROOT, '..', 'ImageToFont')
 );
+const NODE = process.execPath;
+const VITE = path.join(ICONBAKE_ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
 
 function main() {
-  if (!fs.existsSync(SRC)) {
-    console.error(`x 未找到 IconBake 构建产物：${SRC}`);
-    console.error('  请先在 /path/to/IconBake 运行 vite build --base /iconbake/');
+  if (!fs.existsSync(ICONBAKE_ROOT)) {
+    console.error(`x 未找到 IconBake 仓库：${ICONBAKE_ROOT}`);
+    console.error('  请设置 ICONBAKE_ROOT 环境变量指向 IconBake 根目录。');
     process.exit(1);
   }
 
-  console.log(`IconBake : ${SRC}`);
-  console.log(`目标     : ${DEST}\n`);
+  if (!fs.existsSync(VITE)) {
+    console.error(`x 未找到 vite：${VITE}`);
+    console.error('  请先在 IconBake 仓库运行 npm install。');
+    process.exit(1);
+  }
 
+  // 1. 在 IconBake 仓库里以 /iconbake/ 为 base 构建到临时目录
+  const tmpDir = fs.mkdtempSync(path.join(REPO_ROOT, 'tmp-iconbake-'));
+  console.log(`IconBake : ${ICONBAKE_ROOT}`);
+  console.log(`构建目标 : ${tmpDir} (base=/iconbake/)\n`);
+
+  execFileSync(NODE, [VITE, 'build', '--base', '/iconbake/', '--outDir', tmpDir], {
+    cwd: ICONBAKE_ROOT,
+    stdio: 'inherit',
+  });
+
+  // 2. 清空并同步到 public/iconbake/
+  console.log(`\n目标     : ${DEST}`);
   fs.rmSync(DEST, { recursive: true, force: true });
-  fs.cpSync(SRC, DEST, { recursive: true });
+  fs.cpSync(tmpDir, DEST, { recursive: true });
 
-  console.log(`已同步 ${SRC} -> ${DEST}`);
+  // 3. 清理临时目录
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+
+  console.log(`\n已同步 ${ICONBAKE_ROOT} -> ${DEST}`);
   console.log('提示：public/iconbake 需提交进 Git（Vercel 构建时拉取的是本仓库）。');
 }
 
