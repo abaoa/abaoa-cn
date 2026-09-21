@@ -40,6 +40,17 @@ function generateManifest() {
     
     try {
       const info = JSON.parse(fs.readFileSync(infoPath, 'utf-8'));
+
+      // 自动探测封面扩展名（jpg / jpeg / png / webp），避免写死 .jpg 导致图片 404
+      const coverExts = ['jpg', 'jpeg', 'png', 'webp'];
+      let coverExt = 'jpg';
+      for (const ext of coverExts) {
+        if (fs.existsSync(path.join(itemPath, `cover.${ext}`))) {
+          coverExt = ext;
+          break;
+        }
+      }
+      const coverImage = info.coverImage || `/works/${item}/cover.${coverExt}`;
       
       // 提取 manifest 需要的字段
       const work = {
@@ -51,7 +62,7 @@ function generateManifest() {
         tags: info.tags || [],
         platforms: info.platforms || [],
         latestVersion: info.latestVersion,
-        coverImage: `/works/${item}/cover.jpg`
+        coverImage
       };
       
       works.push(work);

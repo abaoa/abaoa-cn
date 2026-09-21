@@ -91,7 +91,7 @@
         "Web"
       ],
       "latestVersion": "1.0.0",
-      "coverImage": "/works/tabpilot/cover.jpg"
+      "coverImage": "/works/tabpilot/cover.png"
     },
     {
       "id": 6,
@@ -110,6 +110,26 @@
       ],
       "latestVersion": "1.0.0",
       "coverImage": "/works/wukong/cover.jpg"
+    },
+    {
+      "id": 7,
+      "slug": "iconbake",
+      "title": "IconBake · 图片转图标字体",
+      "description": "把图片（SVG / PNG）一键烘焙成图标字体（TTF + WOFF）：纯前端生成，文件不离开浏览器；同时提供 Tauri 打包的轻量桌面端。",
+      "icon": "lucide:image",
+      "tags": [
+        "Tauri 1",
+        "JavaScript",
+        "图标字体",
+        "Web",
+        "SVG"
+      ],
+      "platforms": [
+        "Windows",
+        "Web"
+      ],
+      "latestVersion": "0.1.0",
+      "coverImage": "/works/iconbake/cover.png"
     }
   ]
 }

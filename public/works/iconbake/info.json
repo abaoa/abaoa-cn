@@ -1,0 +1,60 @@
+{
+  "id": 7,
+  "slug": "iconbake",
+  "title": "IconBake · 图片转图标字体",
+  "description": "把图片（SVG / PNG）一键烘焙成图标字体（TTF + WOFF）：纯前端生成，文件不离开浏览器；同时提供 Tauri 打包的轻量桌面端。",
+  "icon": "lucide:image",
+  "tags": [
+    "Tauri 1",
+    "JavaScript",
+    "图标字体",
+    "Web",
+    "SVG"
+  ],
+  "platforms": [
+    "Windows",
+    "Web"
+  ],
+  "latestVersion": "0.1.0",
+  "coverImage": "/works/iconbake/cover.png",
+  "demoUrl": "/iconbake/",
+  "repoUrl": "https://github.com/abaoa/IconBake",
+  "features": [
+    "导入 SVG / PNG，自动生成图标字形",
+    "一键导出 TTF / WOFF 字体与配套 CSS",
+    "码位自动落在 PUA 私有区，避免冲突",
+    "纯前端运行，文件不离开浏览器",
+    "位图自动矢量化（imagetracer.js）",
+    "打包下载整套图标资产（JSZip）",
+    "浅色 / 深色 / 跟随系统主题",
+    "桌面端体积小（仅约 5 MB）"
+  ],
+  "systemRequirements": {
+    "windows": "Windows 10 64 位（需 WebView2 运行时）",
+    "web": "支持现代浏览器（Chrome / Edge / Safari）"
+  },
+  "versions": [
+    {
+      "version": "0.1.0",
+      "date": "2026-09-21",
+      "changes": [
+        "首个公开发布版本",
+        "纯前端：把图片（SVG/PNG）烘焙成图标字体（TTF + WOFF）",
+        "桌面端：Tauri 打包的 Windows 可执行文件（约 5 MB）",
+        "项目已开源，欢迎使用与反馈"
+      ],
+      "isLatest": true,
+      "downloads": {
+        "windows": {
+          "url": "https://github.com/abaoa/IconBake/releases/latest",
+          "filename": "iconbake.exe",
+          "size": "5.1 MB",
+          "md5": ""
+        }
+      },
+      "screenshots": [
+        "/works/iconbake/versions/0.1.0/screenshots/1.png"
+      ]
+    }
+  ]
+}
