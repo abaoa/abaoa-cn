@@ -8,6 +8,11 @@
       "source": "/tabpilot",
       "destination": "/tabpilot/",
       "permanent": false
+    },
+    {
+      "source": "/iconbake",
+      "destination": "/iconbake/",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -22,6 +27,10 @@
     {
       "source": "/tabpilot/(.*)",
       "destination": "/tabpilot/$1"
+    },
+    {
+      "source": "/iconbake/(.*)",
+      "destination": "/iconbake/$1"
     },
     {
       "source": "/(.*)",

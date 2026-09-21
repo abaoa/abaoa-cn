@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "sync:tabpilot": "node scripts/sync-tabpilot.js",
+    "sync:iconbake": "node scripts/sync-iconbake.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

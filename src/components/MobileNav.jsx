@@ -47,6 +47,14 @@ function MobileNav() {
             <span className="text-xs font-medium">{item.label}</span>
           </NavLink>
         ))}
+        <a
+          href="/iconbake/"
+          className="flex flex-col items-center gap-1 px-6 py-3 rounded-2xl transition-all duration-200 text-gray-500"
+          aria-label="打开 IconBake"
+        >
+          <span className="iconify" data-icon="lucide:image" style={{ fontSize: '20px' }} aria-hidden="true" />
+          <span className="text-xs font-medium">IconBake</span>
+        </a>
       </div>
       {/* 安全区域适配 */}
       <div className="h-safe-area-inset-bottom" />
