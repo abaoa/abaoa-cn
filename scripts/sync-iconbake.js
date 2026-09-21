@@ -13,7 +13,7 @@
  *   本脚本会先在 IconBake 仓库里执行 `vite build --base /iconbake/`，
  *   再把产物拷贝到本仓库 `public/iconbake/`。
  *   若 IconBake 不在默认位置，用环境变量指定：
- *       ICONBAKE_ROOT=D:/path/to/IconBake npm run sync:iconbake
+ *       ICONBAKE_ROOT=/path/to/IconBake npm run sync:iconbake
  *   注意：public/iconbake 需提交进 Git（Vercel 构建时拉取的是本仓库）。
  */
 
