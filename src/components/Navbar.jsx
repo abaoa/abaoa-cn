@@ -72,16 +72,6 @@ function Navbar() {
             ))}
           </div>
 
-          {/* IconBake 入口（独立子站点，非 SPA 路由） */}
-          <a
-            href="/iconbake/"
-            className="hidden md:flex px-4 py-2 rounded-full text-sm font-medium glass-button opacity-70 hover:opacity-100 items-center gap-2"
-            aria-label="打开 IconBake"
-          >
-            <span className="iconify" data-icon="lucide:image" style={{ fontSize: '16px' }} aria-hidden="true"></span>
-            <span>IconBake</span>
-          </a>
-
           {/* Theme Toggle Button */}
           <button 
             className={`p-2 rounded-full glass-button flex items-center justify-center ${
