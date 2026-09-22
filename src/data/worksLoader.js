@@ -5,7 +5,7 @@
  * 目录结构：
  * /public/works/
  *   ├── manifest.json          # 作品清单
- *   ├── filemanager-pro/
+ *   ├── tabpilot/
  *   │   ├── info.json          # 作品基本信息和所有版本
  *   │   ├── cover.jpg          # 封面图
  *   │   └── versions/

@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Vite 构建/预览时生成的临时配置文件
+vite.config.js.timestamp-*.mjs
+vite.config.*.timestamp-*.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

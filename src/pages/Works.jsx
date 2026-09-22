@@ -62,8 +62,8 @@ function Works() {
     <>
       <SEO 
         title="作品"
-        description="桌面应用与 Web 工具作品集，包括文件管理器、代码编辑器、数据库工具、吉他谱跟随工具等。"
-        keywords="Qt作品, 跨平台应用, 桌面软件, C++开发, Qt6, Qt5, Tauri, 吉他工具, Web应用"
+        description="桌面应用与 Web 工具作品集：吉他谱自动跟随工具 TabPilot、桌面伴侣悟空、图片转图标字体 IconBake。"
+        keywords="Tauri, Qt6, C++开发, 桌面软件, 跨平台应用, 吉他工具, 图标字体, 动态壁纸, Web应用"
       />
       <section className="py-12 min-h-[80vh]" aria-labelledby="works-title">
       <header className="text-center mb-12">

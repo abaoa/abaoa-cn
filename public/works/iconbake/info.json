@@ -1,5 +1,5 @@
 {
-  "id": 7,
+  "id": 3,
   "slug": "iconbake",
   "title": "IconBake · 图片转图标字体",
   "description": "把图片（SVG / PNG）一键烘焙成图标字体（TTF + WOFF）：纯前端生成，文件不离开浏览器；同时提供 Tauri 打包的轻量桌面端。",
