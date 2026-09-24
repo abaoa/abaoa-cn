@@ -23,28 +23,31 @@
   "versions": [
     {
       "version": "1.0.0",
-      "date": "2026-09-16",
+      "date": "2026-09-24",
       "changes": [
         "首个公开发布版本",
         "海岸山村水墨动态壁纸：四季变化、昼夜色温、七夕/元宵/冬至节日彩蛋",
         "旅行系统：双地图、AI 打卡照片、在途明信片、旅行相册",
         "AI 助手：便签四件套 + 配图、AI 周报、旅行见闻",
         "桌面便签（藏签阁）、歌词卡拉OK、音频频谱、天气日记卷轴",
-        "动作资源缺失时显示静立悟空 + 安装引导"
+        "动作资源缺失时显示静立悟空 + 安装引导",
+        "快捷搜索条：双击 Ctrl / Alt+Space 呼出，文件、应用、计算、翻译、提醒一站式",
+        "设置页视觉统一：保存按钮主次分明、页面限宽、开源致谢加粗，关于页新增官网入口",
+        "云同步诊断日志脱敏处理"
       ],
       "isLatest": true,
       "downloads": {
         "windows": {
           "url": "https://github.com/abaoa/WuKong/releases/download/v1.0.0/WuKong-v1.0.0-Windows-x64-Setup.exe",
           "filename": "WuKong-v1.0.0-Windows-x64-Setup.exe",
-          "size": "57 MB",
-          "md5": "ba10d3611592de608f2acd70307993d8"
+          "size": "58 MB",
+          "md5": "abe4611903e8b005628c4fa4780f33c3"
         },
         "resources": {
           "url": "https://github.com/abaoa/WuKong/releases/download/v1.0.0/WuKong-actions-v1.0.0.zip",
           "filename": "WuKong-actions-v1.0.0.zip",
-          "size": "43 MB",
-          "md5": "8a8760510bea4de46b5cfa7ff9cf4bb0",
+          "size": "42 MB",
+          "md5": "e45bc913e85f0ae8a1bbcc55b9d6347d",
           "note": "下载后解压，把 actions 文件夹整个放入安装目录（%LOCALAPPDATA%\\WuKong\\actions）并重启——没有它悟空不会显示。"
         }
       },
